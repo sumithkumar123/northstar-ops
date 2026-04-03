@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "sales_service/Dockerfile"
+buildContext = "."
+
+[deploy]
+startCommand = "sh -c 'alembic -c migrations/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8003}'"
+healthcheckPath = "/sales/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"

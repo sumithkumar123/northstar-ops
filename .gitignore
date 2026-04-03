@@ -1,0 +1,17 @@
+# RSA keys — never commit
+keys/
+.env.railway
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Docker
+*.log

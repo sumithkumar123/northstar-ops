@@ -1,0 +1,133 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: northstar
+      POSTGRES_PASSWORD: northstar_pass
+      POSTGRES_DB: northstar
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U northstar -d northstar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  keygen:
+    image: python:3.12-slim
+    volumes:
+      - ./keys:/keys
+      - ./scripts:/scripts
+    command: >
+      sh -c "pip install cryptography -q &&
+             python /scripts/generate_keys.py &&
+             echo 'Keys generated OK'"
+    restart: "no"
+
+  auth_service:
+    build:
+      context: .
+      dockerfile: auth_service/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://northstar:northstar_pass@postgres/northstar
+      DB_SCHEMA: auth
+      JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      ACCESS_TOKEN_TTL: 900
+      REFRESH_TOKEN_TTL: 86400
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  inventory_service:
+    build:
+      context: .
+      dockerfile: inventory_service/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://northstar:northstar_pass@postgres/northstar
+      DB_SCHEMA: inventory
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      AUTH_SERVICE_URL: http://auth_service:8001
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  sales_service:
+    build:
+      context: .
+      dockerfile: sales_service/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://northstar:northstar_pass@postgres/northstar
+      DB_SCHEMA: sales
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      INVENTORY_SERVICE_URL: http://inventory_service:8002
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  ai_service:
+    build:
+      context: .
+      dockerfile: ai_service/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://northstar:northstar_pass@postgres/northstar
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      AUTH_SERVICE_URL: http://auth_service:8001
+      INVENTORY_SERVICE_URL: http://inventory_service:8002
+      SALES_SERVICE_URL: http://sales_service:8003
+      AI_SERVICE_URL: http://ai_service:8004
+    volumes:
+      - ./keys:/app/keys:ro
+    depends_on:
+      - auth_service
+      - inventory_service
+      - sales_service
+      - ai_service
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      GATEWAY_URL: http://gateway:8000
+    depends_on:
+      - gateway
+    restart: on-failure
+
+volumes:
+  pg_data:

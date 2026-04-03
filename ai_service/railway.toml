@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "ai_service/Dockerfile"
+buildContext = "."
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8004}"
+healthcheckPath = "/ai/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
