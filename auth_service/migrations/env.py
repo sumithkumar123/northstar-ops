@@ -2,6 +2,7 @@ import os
 import asyncio
 from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy import text
 from alembic import context
 
@@ -21,6 +22,7 @@ DB_SCHEMA = os.environ.get("DB_SCHEMA", "auth")
 async def run_migrations_online():
     engine = create_async_engine(
         DATABASE_URL,
+        poolclass=NullPool,
         connect_args={"server_settings": {"search_path": DB_SCHEMA}},
     )
     async with engine.connect() as conn:

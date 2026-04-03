@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy import text
 from alembic import context
 from models import Base
@@ -19,6 +20,7 @@ DB_SCHEMA = os.environ.get("DB_SCHEMA", "inventory")
 async def run_migrations_online():
     engine = create_async_engine(
         DATABASE_URL,
+        poolclass=NullPool,
         connect_args={"server_settings": {"search_path": DB_SCHEMA}},
     )
     async with engine.connect() as conn:
