@@ -12,6 +12,10 @@ from fastapi.responses import Response
 
 router = APIRouter()
 
+@router.get("/health")
+async def health():
+    return {"status": "ok", "service": "gateway"}
+
 UPSTREAMS = {
     "/auth": os.environ.get("AUTH_SERVICE_URL", "http://auth_service:8001"),
     "/inventory": os.environ.get("INVENTORY_SERVICE_URL", "http://inventory_service:8002"),

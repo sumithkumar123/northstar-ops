@@ -7,4 +7,4 @@ COPY auth_service/ .
 COPY shared/ /app/shared/
 COPY scripts/ /scripts/
 ENV PYTHONPATH=/app
-CMD ["sh", "-c", "alembic -c migrations/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8001"]
+CMD ["sh", "-c", "alembic -c migrations/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001}"]
