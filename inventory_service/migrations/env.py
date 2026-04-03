@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
 from alembic import context
 from models import Base
 
@@ -21,6 +22,8 @@ async def run_migrations_online():
         connect_args={"server_settings": {"search_path": DB_SCHEMA}},
     )
     async with engine.connect() as conn:
+        await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {DB_SCHEMA}"))
+        await conn.commit()
         await conn.run_sync(
             lambda c: context.configure(
                 connection=c,
