@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from models import Base
 
 target_metadata = Base.metadata
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = os.environ["DATABASE_URL"].replace("postgresql://", "postgresql+asyncpg://", 1)
 DB_SCHEMA = os.environ.get("DB_SCHEMA", "auth")
 
 
