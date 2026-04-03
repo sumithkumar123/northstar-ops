@@ -20,9 +20,18 @@ def _load_private_key() -> str:
     if b64:
         import base64
         return base64.b64decode(b64).decode()
-    return Path(os.environ["JWT_PRIVATE_KEY_PATH"]).read_text()
+    path = os.environ.get("JWT_PRIVATE_KEY_PATH")
+    if path:
+        return Path(path).read_text()
+    raise RuntimeError("Neither JWT_PRIVATE_KEY_B64 nor JWT_PRIVATE_KEY_PATH is set")
 
-PRIVATE_KEY = _load_private_key()
+try:
+    PRIVATE_KEY = _load_private_key()
+    print("[services] private key loaded OK", flush=True)
+except Exception as e:
+    import sys
+    print(f"[services] FATAL: {e}", file=sys.stderr, flush=True)
+    raise
 ACCESS_TOKEN_TTL = int(os.environ.get("ACCESS_TOKEN_TTL", 900))      # seconds
 REFRESH_TOKEN_TTL = int(os.environ.get("REFRESH_TOKEN_TTL", 86400))  # seconds
 

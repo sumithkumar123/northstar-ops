@@ -1,4 +1,5 @@
 import os
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,12 +14,25 @@ def _load_public_key() -> str:
     if b64:
         import base64
         return base64.b64decode(b64).decode()
-    return open(os.environ["JWT_PUBLIC_KEY_PATH"]).read()
+    path = os.environ.get("JWT_PUBLIC_KEY_PATH")
+    if path:
+        return open(path).read()
+    raise RuntimeError("Neither JWT_PUBLIC_KEY_B64 nor JWT_PUBLIC_KEY_PATH is set")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.public_key = _load_public_key()
+    print(f"[startup] PORT={os.environ.get('PORT', 'NOT SET')}", flush=True)
+    print(f"[startup] DB_SCHEMA={os.environ.get('DB_SCHEMA', 'NOT SET')}", flush=True)
+    print(f"[startup] JWT_PUBLIC_KEY_B64 set={bool(os.environ.get('JWT_PUBLIC_KEY_B64'))}", flush=True)
+    print(f"[startup] JWT_PRIVATE_KEY_B64 set={bool(os.environ.get('JWT_PRIVATE_KEY_B64'))}", flush=True)
+    try:
+        app.state.public_key = _load_public_key()
+        print("[startup] public key loaded OK", flush=True)
+    except Exception as e:
+        print(f"[startup] FATAL: failed to load public key: {e}", file=sys.stderr, flush=True)
+        raise
     app.state.public_key_path = os.environ.get("JWT_PUBLIC_KEY_PATH", "")
+    print("[startup] ready", flush=True)
     yield
     await engine.dispose()
 
