@@ -235,4 +235,12 @@ async def run_agent_query(
         return {"error": "The agent took too long to respond. Please try a simpler question."}
     except Exception as e:
         logger.error("Agent query failed: %s", e, exc_info=True)
+        error_text = str(e).lower()
+        if (
+            "resource_exhausted" in error_text
+            or "quota exceeded" in error_text
+            or "429" in error_text
+            or "rate limit" in error_text
+        ):
+            return {"error": "API key limit completed"}
         return {"error": f"Agent execution failed: {str(e)}"}

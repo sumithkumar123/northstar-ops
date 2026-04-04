@@ -81,6 +81,19 @@ function getToolName(tool?: AgentToolCall) {
   return tool?.tool || tool?.name || 'unknown_tool'
 }
 
+function normalizeAgentError(message: string) {
+  const lower = message.toLowerCase()
+  if (
+    lower.includes('resource_exhausted')
+    || lower.includes('quota exceeded')
+    || lower.includes('rate limit')
+    || lower.includes('429')
+  ) {
+    return 'API key limit completed'
+  }
+  return message
+}
+
 export default function AgentActivityFeed() {
   const user = authStore.getUser()
   const storeId = user?.store_id ?? STORE_ID
@@ -133,7 +146,7 @@ export default function AgentActivityFeed() {
       setAgentResponse(result)
       await fetchEvents()
     } catch (e: any) {
-      setAgentResponse({ error: e.message })
+      setAgentResponse({ error: normalizeAgentError(e.message || 'Agent request failed') })
     } finally {
       setQueryLoading(false)
     }
@@ -217,7 +230,7 @@ export default function AgentActivityFeed() {
           {agentResponse && (
             <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
               {agentResponse.error ? (
-                <p className="text-sm text-red-400">{agentResponse.error}</p>
+                <p className="text-sm text-red-400">{normalizeAgentError(agentResponse.error)}</p>
               ) : (
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-500">
