@@ -105,6 +105,9 @@ export default function DashboardPage() {
   const commandSummary = alerts.length > 0
     ? `${alerts.length} products need attention. The agent can prioritize restock or transfer actions for you.`
     : 'Inventory is currently healthy. Use the agent to check transfers, anomalies, and performance without opening multiple reports.'
+  const heroSummary = alerts.length > 0
+    ? `Track sales, low-stock risk, transfers, and anomaly checks for ${storeName}. ${alerts.length} products currently need manager attention.`
+    : `Track sales, inventory health, transfers, and anomaly checks for ${storeName} from one operational control room.`
 
   return (
     <div className="mx-auto max-w-7xl p-4 sm:p-6">
@@ -116,43 +119,43 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="max-w-2xl">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-                    Store Command Deck
+                    Store Command Center
                   </p>
-                  <h1 className="display-font mt-2 text-4xl text-white">NorthStar Ops for {storeName}</h1>
+                  <h1 className="display-font mt-2 text-3xl leading-tight text-white sm:text-4xl">
+                    {storeName} Operations Hub
+                  </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    A retail control room where live services handle transactions and inventory, while the
-                    agent reasons across those systems to recommend restocks, transfers, fraud checks, and
-                    performance actions.
+                    {heroSummary}
                   </p>
                 </div>
                 <div className="grid min-w-[230px] gap-3 sm:grid-cols-3 lg:grid-cols-1">
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-400">
                       <Bot size={12} className="text-cyan-300" />
-                      Agent
+                      Store Agent
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-white">Live tool-calling copilot</p>
+                    <p className="mt-2 text-sm font-semibold text-white">Answers questions using live {storeName} data</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-400">
                       <Radar size={12} className="text-violet-300" />
-                      Sentinels
+                      Background Scans
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-white">Auto scans every 5-10 minutes</p>
+                    <p className="mt-2 text-sm font-semibold text-white">Checks {storeName} every 5-10 minutes</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-400">
                       <ShieldCheck size={12} className="text-emerald-300" />
-                      Audit
+                      Audit Trail
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-white">Every AI action is logged</p>
+                    <p className="mt-2 text-sm font-semibold text-white">Logs every recommendation and alert</p>
                   </div>
                 </div>
               </div>
 
               <div className="rounded-[24px] border border-white/10 bg-slate-950/40 px-4 py-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Operations Snapshot
+                  Current Store Snapshot
                 </p>
                 <p className="mt-2 text-sm leading-7 text-slate-200">{commandSummary}</p>
               </div>

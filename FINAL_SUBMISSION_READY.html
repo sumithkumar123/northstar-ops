@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NorthStar Submission Pack</title>
+  <style>
+    :root {
+      --bg: #071324;
+      --card: #0d1a2d;
+      --card-2: #0f2037;
+      --text: #eef4fb;
+      --muted: #8297b7;
+      --line: #1b3556;
+      --accent: #2bb8ff;
+      --teal: #29d1c2;
+      --green: #4ad58b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #11243b;
+      background: linear-gradient(180deg, #eef5fb 0%, #e7f0fa 100%);
+    }
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 42px 44px 64px;
+    }
+    .hero {
+      background: radial-gradient(circle at top left, #15314d 0%, var(--bg) 58%);
+      color: var(--text);
+      padding: 36px 38px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(7, 19, 36, 0.2);
+      margin-bottom: 26px;
+    }
+    .hero h1 {
+      font-size: 38px;
+      margin: 0 0 6px;
+      line-height: 1.06;
+    }
+    .hero h2 {
+      margin: 0;
+      color: #b8d8ff;
+      font-size: 19px;
+      font-weight: 600;
+    }
+    .hero p {
+      margin: 12px 0 0;
+      color: #c6d7ef;
+      line-height: 1.6;
+    }
+    .content {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(27, 53, 86, 0.12);
+      border-radius: 24px;
+      padding: 34px 36px 40px;
+      backdrop-filter: blur(10px);
+    }
+    h1, h2, h3, h4 {
+      color: #102947;
+      line-height: 1.18;
+      page-break-after: avoid;
+    }
+    h1 { font-size: 30px; margin-top: 0; }
+    h2 {
+      font-size: 22px;
+      margin: 28px 0 10px;
+      border-top: 1px solid rgba(27, 53, 86, 0.12);
+      padding-top: 18px;
+    }
+    h3 { font-size: 17px; margin: 18px 0 8px; color: #1d4b78; }
+    p, li, blockquote {
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: #1f3247;
+    }
+    ul, ol { padding-left: 24px; }
+    strong { color: #102947; }
+    code {
+      font-family: Consolas, monospace;
+      font-size: 0.92em;
+      background: #e8f0fb;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre {
+      background: #0d1a2d;
+      color: #e8f1fb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    blockquote {
+      margin: 16px 0;
+      padding: 14px 18px;
+      border-left: 4px solid var(--accent);
+      background: #edf6ff;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 22px;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+    th {
+      background: #dcecff;
+      color: #102947;
+      font-size: 13px;
+      text-align: left;
+    }
+    td {
+      background: rgba(255, 255, 255, 0.7);
+    }
+    th, td {
+      border: 1px solid #d6e2f0;
+      padding: 10px 12px;
+      font-size: 13px;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    hr { border: none; border-top: 1px solid rgba(27, 53, 86, 0.12); margin: 24px 0; }
+    img {
+      width: 100%;
+      border-radius: 18px;
+      border: 1px solid rgba(17, 41, 71, 0.12);
+      box-shadow: 0 14px 28px rgba(11, 26, 45, 0.12);
+      background: white;
+    }
+    p img {
+      margin: 18px 0 6px;
+    }
+    a { color: #0f6fb2; text-decoration: none; }
+    @media print {
+      body { background: white; }
+      .page { max-width: none; padding: 16px; }
+      .content { border: none; box-shadow: none; padding: 0; background: white; }
+      .hero { box-shadow: none; }
+      h2, h3, table, img, pre, blockquote { page-break-inside: avoid; }
+    }
+    </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>NorthStar Outfitters</h1>
+      <h2>Agentic Retail Operations Platform</h2>
+      <p>Submission-ready case study pack with architecture, service flow, agentic AI explanation, screenshots, and evaluation-criteria mapping.</p>
+    </section>
+    <section class="content">
+      <h1>NorthStar Outfitters</h1>
+<h2>Agentic Retail Operations Platform</h2>
+<p><strong>Submitted by:</strong> Ratnala Sumith Kumar<br>
+<strong>Assessment:</strong> Centific Premier Hackathon 2.0<br>
+<strong>Case Study:</strong> Mobile-First Operations Platform for a Specialty Retail Chain<br>
+<strong>Stack:</strong> Python + FastAPI + PostgreSQL + React + LangGraph + Gemini</p>
+<p><strong>Live Demo:</strong> <a href="https://northstar-ops-sage.vercel.app/">northstar-ops-sage.vercel.app</a><br>
+<strong>Source Code:</strong> <a href="https://github.com/sumithkumar123/northstar-ops">github.com/sumithkumar123/northstar-ops</a></p>
+<hr>
+<h2>1. Executive Summary</h2>
+<p>NorthStar Outfitters operates 48 stores across two countries. A store manager needs one system that can:</p>
+<ul>
+<li>run checkout and billing safely</li>
+<li>keep inventory synchronized in near real time</li>
+<li>work on mobile and low-end devices</li>
+<li>surface anomalies, restock risks, and business insights quickly</li>
+<li>explain why the AI recommended an action</li>
+</ul>
+<p>This submission delivers that as a microservices-based retail platform with an <strong>agentic AI layer</strong>, not just a database dashboard with a chat box attached.</p>
+<p>The platform combines:</p>
+<ul>
+<li><strong>Transactional services</strong> for auth, inventory, sales, and gateway routing</li>
+<li><strong>A retail agent</strong> that chooses tools dynamically based on the question</li>
+<li><strong>Autonomous sentinels</strong> that scan stores every 5-10 minutes</li>
+<li><strong>An audit trail</strong> so managers can verify what the AI did, which tools it called, and whether the action was reasonable</li>
+</ul>
+<p>The core value is simple: instead of making managers inspect five screens and connect the dots manually, the system can answer operational questions in plain English and show the tool trace behind the answer.</p>
+<hr>
+<h2>2. Evaluation Criteria Check</h2>
+<p>The case study asked for a mobile-first retail operations platform with microservices, secure auth, inventory and billing workflows, BI dashboards, and responsible agentic AI.</p>
+<h3>Coverage Matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Evaluation Criterion</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clear microservices-based architecture</td>
+<td><strong>Met</strong></td>
+<td>Separate gateway, auth, inventory, sales, AI service, shared schema contracts, PostgreSQL schemas</td>
+</tr>
+<tr>
+<td>Responsive mobile-compatible design</td>
+<td><strong>Met</strong></td>
+<td>React + Tailwind, tablet/mobile-friendly navigation, POS optimized for smaller screens</td>
+</tr>
+<tr>
+<td>Secure auth and RBAC</td>
+<td><strong>Met</strong></td>
+<td>RS256 JWT, refresh tokens, role checks at gateway and service layer</td>
+</tr>
+<tr>
+<td>Inventory, billing, stock monitoring, replenishment workflows</td>
+<td><strong>Met</strong></td>
+<td>Inventory service, POS checkout, low-stock alerts, replenishment recommendations</td>
+</tr>
+<tr>
+<td>Transfer workflow</td>
+<td><strong>Partially met</strong></td>
+<td>Inventory transaction types support <code>transfer_in</code> / <code>transfer_out</code>; AI now recommends inter-store transfers, but a dedicated transfer execution UI is still phase 2</td>
+</tr>
+<tr>
+<td>BI dashboards and operational reporting</td>
+<td><strong>Met</strong></td>
+<td>Revenue trend, top products, inventory alerts, reports page, performance summaries</td>
+</tr>
+<tr>
+<td>Agentic AI recommendations, anomaly detection, conversational querying</td>
+<td><strong>Met</strong></td>
+<td>LangGraph retail agent, anomaly checks, merchandising insights, natural-language querying</td>
+</tr>
+<tr>
+<td>Python + PostgreSQL with sound APIs/data design</td>
+<td><strong>Met</strong></td>
+<td>FastAPI services, SQLAlchemy async, PostgreSQL schemas, clear REST routes</td>
+</tr>
+<tr>
+<td>Performance and scalability considerations</td>
+<td><strong>Met</strong></td>
+<td>Async services, row locks for stock consistency, stateless AI service, deployment-ready containers</td>
+</tr>
+<tr>
+<td>Security, reliability, observability, audit logging</td>
+<td><strong>Met</strong></td>
+<td>JWT, RBAC, health endpoints, audit table, deterministic low-level service boundaries</td>
+</tr>
+<tr>
+<td>Intermittent connectivity and low-end devices</td>
+<td><strong>Met</strong></td>
+<td>Offline-safe POS with idempotent <code>offline_id</code>, lightweight mobile UI</td>
+</tr>
+<tr>
+<td>Maintainability and future ERP/payment readiness</td>
+<td><strong>Met</strong></td>
+<td>Service boundaries, documented APIs, gateway pattern, external integration path clear</td>
+</tr>
+<tr>
+<td>Compliance with AI-assisted development guardrails</td>
+<td><strong>Met</strong></td>
+<td>AI restricted to bounded tool use, manager-only access, auditable outputs, no uncontrolled SQL generation</td>
+</tr>
+</tbody>
+</table>
+<h3>Honest Gap</h3>
+<p>The main gap was that <strong>transfer workflow</strong> was previously implied but not demonstrated strongly enough in the product. To close that, this version adds a new agentic tool:</p>
+<ul>
+<li><code>recommend_interstore_transfer</code></li>
+</ul>
+<p>This allows the agent to reason about whether a different store can temporarily cover a stock gap before recommending a fresh supplier order.</p>
+<hr>
+<h2>3. What We Built</h2>
+<h3>In Plain Terms</h3>
+<p>This project is a retail operations control room.</p>
+<p>Without the AI, a store manager must:</p>
+<ol>
+<li>open inventory</li>
+<li>check low-stock items</li>
+<li>open sales reports</li>
+<li>estimate whether those items are actually moving fast</li>
+<li>check if a suspicious transaction looks real</li>
+<li>decide whether to reorder, transfer inventory, or ignore</li>
+</ol>
+<p>With this system, the manager can ask:</p>
+<blockquote>
+<p>"What products need restocking before the weekend?"<br>
+"Can another store transfer stock to mine instead of ordering new units?"<br>
+"Summarize my store performance and top products this week."</p>
+</blockquote>
+<p>The agent then:</p>
+<ol>
+<li>decides what data it needs</li>
+<li>calls the correct retail tools</li>
+<li>reasons over the results</li>
+<li>answers in manager language</li>
+<li>logs the decision in <code>Agent Activity</code></li>
+</ol>
+<p>That is the difference between a normal DB project and an agentic retail operations platform.</p>
+<hr>
+<h2>4. Architecture Overview</h2>
+<p><img alt="Submission Architecture" src="./screenshots/submission_architecture.png"></p>
+<h3>Why This Structure Matters</h3>
+<ul>
+<li><strong>Gateway</strong> keeps the client simple and centralizes auth enforcement</li>
+<li><strong>Inventory</strong> and <strong>Sales</strong> remain deterministic transactional services</li>
+<li><strong>AI service</strong> stays isolated, so agent logic can evolve without risking billing or stock integrity</li>
+<li><strong>PostgreSQL</strong> uses separate schemas to preserve service boundaries while keeping the prototype deployable</li>
+</ul>
+<hr>
+<h2>5. Service Flow</h2>
+<h3>User-Initiated Agent Query</h3>
+<p><img alt="Submission Query Flow" src="./screenshots/submission_query_flow.png"></p>
+<h3>Autonomous Agent Loops</h3>
+<p><img alt="Submission Autonomous Loops" src="./screenshots/submission_autonomous_loops.png"></p>
+<p>This addresses the mentor feedback about “how the services flow” and “how they function using agentic AI” much more clearly than the original document did.</p>
+<hr>
+<h2>6. Why This Is Actually Agentic</h2>
+<p>Many projects say "AI" but only mean:</p>
+<ul>
+<li>a chatbot wrapped around static text</li>
+<li>a keyword router</li>
+<li>a hardcoded rule like <code>if stock &lt; threshold then alert</code></li>
+</ul>
+<p>This project is different.</p>
+<h3>Traditional Pattern</h3>
+<pre><code class="language-python">def low_stock_report(store_id):
+    return db.query(&quot;SELECT * FROM inventory WHERE quantity &lt;= reorder_point&quot;)
+</code></pre>
+<p>That returns data, but it does not decide anything.</p>
+<h3>Our Agentic Pattern</h3>
+<p>The retail agent uses LangGraph ReAct:</p>
+<ol>
+<li><strong>Reason:</strong> what data do I need first?</li>
+<li><strong>Act:</strong> call a retail tool</li>
+<li><strong>Observe:</strong> inspect the returned result</li>
+<li><strong>Reason again:</strong> do I need another tool?</li>
+<li><strong>Finish:</strong> synthesize a specific action for the manager</li>
+</ol>
+<p>Example:</p>
+<blockquote>
+<p>"Should I reorder Trail Running Shoes before the weekend, or can another store transfer stock to me?"</p>
+</blockquote>
+<p>The agent can decide to call:</p>
+<ol>
+<li><code>check_inventory_levels</code></li>
+<li><code>analyze_sales_velocity</code></li>
+<li><code>recommend_interstore_transfer</code></li>
+<li><code>compute_restock_quantities</code></li>
+</ol>
+<p>It can then answer something like:</p>
+<blockquote>
+<p>"NYC will run short within 2 days. Boston has enough surplus to transfer 12 units immediately. After that, place a supplier order for 30 more units to cover the weekend and 14-day buffer."</p>
+</blockquote>
+<p>That is useful because the AI is not just formatting data. It is selecting tools, chaining them, and deciding on the right operational response.</p>
+<hr>
+<h2>7. Agent Tooling</h2>
+<p>The current AI service exposes these retail tools:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What It Does</th>
+<th>Why It Matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check_inventory_levels</code></td>
+<td>Current stock + reorder status</td>
+<td>Base signal for stock questions</td>
+</tr>
+<tr>
+<td><code>analyze_sales_velocity</code></td>
+<td>Units sold per day + days of stock left</td>
+<td>Converts stock numbers into urgency</td>
+</tr>
+<tr>
+<td><code>detect_transaction_anomalies</code></td>
+<td>Finds suspicious orders with Z-score logic</td>
+<td>Fraud / shrinkage signal</td>
+</tr>
+<tr>
+<td><code>get_seasonal_demand_forecast</code></td>
+<td>Highlights products relevant to current season</td>
+<td>Merchandising support</td>
+</tr>
+<tr>
+<td><code>compute_restock_quantities</code></td>
+<td>Recommends purchase quantities</td>
+<td>Actionable replenishment</td>
+</tr>
+<tr>
+<td><code>get_store_performance_summary</code></td>
+<td>Revenue, AOV, daily trends, top products</td>
+<td>Manager performance view</td>
+</tr>
+<tr>
+<td><code>recommend_interstore_transfer</code></td>
+<td>Suggests donor stores with safe surplus</td>
+<td>Stronger transfer workflow story</td>
+</tr>
+</tbody>
+</table>
+<h3>Why the New Transfer Tool Matters</h3>
+<p>This makes the project stronger against the rubric and the mentor feedback.</p>
+<p>It shows that the AI is not only:</p>
+<ul>
+<li>answering from one table</li>
+<li>generating a summary</li>
+</ul>
+<p>It is now also helping with a cross-service operational decision:</p>
+<ul>
+<li>destination store demand</li>
+<li>donor store surplus</li>
+<li>timing before stockout</li>
+<li>transfer-before-reorder recommendation</li>
+</ul>
+<p>That is a more convincing example of agentic AI in a retail context.</p>
+<hr>
+<h2>8. How the User Can Verify the AI</h2>
+<p>One of the strongest product improvements is the <strong>Agent Activity</strong> panel.</p>
+<p>It now acts like an AI work log.</p>
+<p>Each activity row can show:</p>
+<ul>
+<li><strong>who acted</strong>: Retail Agent / Restock Sentinel / Guardian Sentinel</li>
+<li><strong>what happened</strong>: business summary or alert</li>
+<li><strong>which tools were used</strong></li>
+<li><strong>why it was logged</strong></li>
+<li><strong>severity</strong></li>
+<li><strong>time</strong></li>
+</ul>
+<p>This matters for trust.</p>
+<p>A manager can now see:</p>
+<blockquote>
+<p>"The agent answered my question by calling <code>get_store_performance_summary</code>"</p>
+</blockquote>
+<p>and decide:</p>
+<ul>
+<li>yes, that was the correct tool</li>
+<li>or no, the agent should have also checked inventory / anomaly / transfer tools</li>
+</ul>
+<p>So <code>Agent Activity</code> is not just decoration. It is an explainability and validation surface.</p>
+<hr>
+<h2>9. Screens and UX</h2>
+<h3>Dashboard</h3>
+<p><img alt="Dashboard" src="./screenshots/01_dashboard.png"></p>
+<h3>Reports and AI</h3>
+<p><img alt="Reports" src="./screenshots/04_reports_ai.png"></p>
+<h3>POS</h3>
+<p><img alt="POS" src="./screenshots/02_pos.png"></p>
+<h3>UI Notes</h3>
+<p>The dashboard has been reworked to make the agent feel like the primary control surface:</p>
+<ul>
+<li>the agent command panel is now top-aligned and sticky on desktop</li>
+<li>the audit feed is visually separated as an explainability surface</li>
+<li>tool traces are visible in both the immediate response and the activity log</li>
+<li>the visual system now uses a more intentional command-center style instead of a generic admin template feel</li>
+</ul>
+<p>This directly addresses the concern that the project should not look like a standard DB app with an AI widget bolted on.</p>
+<hr>
+<h2>10. Security, Reliability, and Auditability</h2>
+<h3>Security</h3>
+<ul>
+<li>RS256 JWT auth</li>
+<li>refresh tokens</li>
+<li>role-based access for regional admins, store managers, sales associates</li>
+<li>gateway-enforced and service-enforced authorization</li>
+</ul>
+<h3>Reliability</h3>
+<ul>
+<li>health endpoints per service</li>
+<li>containerized deployment</li>
+<li>isolated transactional services for inventory and sales</li>
+<li>AI service failure does not break base retail workflows</li>
+</ul>
+<h3>Auditability</h3>
+<ul>
+<li>every agent event is stored in <code>ai_agent_events</code></li>
+<li>managers can see the event summary, severity, time, and tool trace</li>
+<li>this keeps the AI explainable and reviewable</li>
+</ul>
+<h3>Guardrails</h3>
+<ul>
+<li>no open-ended agent access to mutate arbitrary DB state</li>
+<li>tool surface is bounded and explicit</li>
+<li>manager-only access to agent endpoints</li>
+<li>deterministic legacy endpoints remain available for fallback</li>
+</ul>
+<hr>
+<h2>11. Performance and Scalability Story</h2>
+<p>The case study asked for 1,200 concurrent users and seasonal spikes.</p>
+<p>This prototype addresses that through design choices rather than synthetic benchmark claims:</p>
+<ul>
+<li><strong>FastAPI async services</strong> keep I/O non-blocking</li>
+<li><strong>SQLAlchemy async + asyncpg</strong> scale better under concurrent API load</li>
+<li><strong><code>SELECT FOR UPDATE</code></strong> protects inventory consistency during concurrent checkout</li>
+<li><strong>Stateless AI service</strong> can be scaled independently of auth/inventory/sales</li>
+<li><strong>Gateway pattern</strong> keeps the client talking to a single public edge</li>
+<li><strong>Container-based deployment</strong> keeps services independently deployable</li>
+</ul>
+<h3>Practical Speed Story</h3>
+<ul>
+<li>transactional reads are simple REST calls</li>
+<li>the agent usually answers in one to a few tool calls</li>
+<li>the audit trail gives immediate confirmation that the AI finished the workflow</li>
+</ul>
+<p>The goal is not just “use AI.” The goal is “make AI fast enough and bounded enough to be operationally useful.”</p>
+<hr>
+<h2>12. Offline and Low-End Device Constraints</h2>
+<p>The case study explicitly mentioned intermittent connectivity and tablets/low-end Android devices.</p>
+<p>This prototype addresses that by:</p>
+<ul>
+<li>keeping the client lightweight</li>
+<li>using role-focused screens instead of overloaded workflows</li>
+<li>supporting offline-safe order retries through <code>offline_id</code></li>
+<li>building a compact POS layout suitable for floor staff</li>
+</ul>
+<h3>Idempotent POS Retry Pattern</h3>
+<pre><code class="language-python">if offline_id already exists:
+    return existing_order
+else:
+    create_order()
+</code></pre>
+<p>That prevents double-posting when a shaky connection causes the same payment attempt to retry.</p>
+<hr>
+<h2>13. Deployment</h2>
+<h3>Local</h3>
+<pre><code class="language-bash">docker compose up --build
+docker compose exec auth_service python /scripts/seed.py
+</code></pre>
+<h3>Hosted Prototype</h3>
+<ul>
+<li><strong>Frontend:</strong> Vercel</li>
+<li><strong>Python services:</strong> Railway</li>
+<li><strong>Database:</strong> PostgreSQL</li>
+</ul>
+<p>This satisfies the “deployable” expectation from the mentor feedback. The system is not just designed; it is actually running across a hosted frontend and backend.</p>
+<hr>
+<h2>14. Mentor Feedback Check</h2>
+<p>The earlier feedback was essentially:</p>
+<blockquote>
+<p>"The service structure is good, but it still sounds like a normal DB project. Show how it is agentic, how the services flow, how it works fast, and how it is deployable."</p>
+</blockquote>
+<h3>What Has Now Been Addressed</h3>
+<table>
+<thead>
+<tr>
+<th>Feedback Theme</th>
+<th>Current State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Sounds like a normal DB project"</td>
+<td>Improved: the dashboard foregrounds the agent, the document explains ReAct flow, and the tool trace is visible</td>
+</tr>
+<tr>
+<td>"Agentic AI is not clear"</td>
+<td>Improved: explicit tool-chaining examples, sentinels, activity audit, transfer advisor</td>
+</tr>
+<tr>
+<td>"Architecture is not clear"</td>
+<td>Improved: mermaid architecture + sequence flow</td>
+</tr>
+<tr>
+<td>"How do services run?"</td>
+<td>Improved: gateway/service/tool/database flow documented</td>
+</tr>
+<tr>
+<td>"How fast/effective is it?"</td>
+<td>Improved: async services, stateless AI, bounded tool calls, deployable hosted stack</td>
+</tr>
+<tr>
+<td>"Deployable annav kada"</td>
+<td>Met: Vercel + Railway deployment exists</td>
+</tr>
+</tbody>
+</table>
+<h3>Still Worth Improving Later</h3>
+<ul>
+<li>full transfer execution UI instead of only AI recommendation + inventory transaction types</li>
+<li>richer observability such as OpenTelemetry traces</li>
+<li>live ERP and payment gateway integration</li>
+<li>richer regional admin cross-store orchestration dashboard</li>
+</ul>
+<hr>
+<h2>15. Final Positioning</h2>
+<p>This project is best described as:</p>
+<blockquote>
+<p><strong>A retail operations platform where microservices run the core business safely, and an agentic AI layer reasons across those services to help managers act faster.</strong></p>
+</blockquote>
+<p>It stands out because:</p>
+<ul>
+<li>the AI is connected to real tools, not just a prompt box</li>
+<li>the agent can work proactively through scheduled sentinels</li>
+<li>users can verify the AI through tool traces and audit logs</li>
+<li>the product is deployable and structured for future expansion</li>
+</ul>
+<p>If judged as a case-study prototype, it is strongest in:</p>
+<ul>
+<li>architecture</li>
+<li>RBAC/security</li>
+<li>operational dashboards</li>
+<li>replenishment/anomaly agent workflows</li>
+<li>explainable agent behavior</li>
+</ul>
+<p>The main area still not fully production-complete is a dedicated <strong>transfer execution workflow UI</strong>, but the new inter-store transfer advisor makes that path explicit and materially strengthens the agentic retail story.</p>
+<hr>
+<h2>16. Appendix: Example Agent Trace</h2>
+<p><strong>Question</strong></p>
+<blockquote>
+<p>"Summarize my store performance and top products this week."</p>
+</blockquote>
+<p><strong>Observed behavior</strong></p>
+<ul>
+<li>model receives manager question</li>
+<li>agent selects <code>get_store_performance_summary</code></li>
+<li>tool reads paid orders and top products</li>
+<li>agent writes a concise summary</li>
+<li><code>Agent Activity</code> stores the result with the tool trace</li>
+</ul>
+<p><strong>Why this is important</strong></p>
+<p>The user can now verify that the selected tool was appropriate. That makes the system easier to trust, debug, and demonstrate during evaluation.</p>
+<hr>
+<p><em>Prepared for the Centific NorthStar Outfitters case study assessment.</em></p>
+    </section>
+  </main>
+</body>
+</html>
