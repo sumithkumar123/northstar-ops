@@ -187,6 +187,21 @@ async def agent_status(request: Request):
         "init_error": INIT_ERROR,
     }
 
+@router.get("/agent/models")
+async def list_models():
+    """Debug route: List all models available to the current API key."""
+    import os
+    import google.generativeai as genai
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        return {"error": "API key not set"}
+    try:
+        genai.configure(api_key=key)
+        models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        return {"available_models": models}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 @router.get("/health")
 async def health():
