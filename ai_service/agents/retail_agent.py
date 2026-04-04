@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import traceback
 from typing import Optional
 
@@ -50,7 +51,7 @@ def create_retail_agent():
     Returns None if GEMINI_API_KEY is not configured (graceful degradation).
     """
     global INIT_ERROR
-    
+
     if not GEMINI_API_KEY:
         INIT_ERROR = "GEMINI_API_KEY environment variable is empty or not set."
         logger.warning(INIT_ERROR)
@@ -58,16 +59,16 @@ def create_retail_agent():
 
     try:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-3-flash-preview",
+            model="gemini-2.0-flash",
             google_api_key=GEMINI_API_KEY,
-            temperature=0,          # Deterministic for business decisions
+            temperature=0,
             max_tokens=2048,
         )
         agent = create_react_agent(
             llm,
             ALL_TOOLS,
         )
-        logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
+        logger.info("NorthStar Retail Agent initialized: Gemini 2.0 Flash + %d tools", len(ALL_TOOLS))
         INIT_ERROR = None
         return agent
     except Exception as e:
@@ -88,32 +89,33 @@ async def run_agent_query(
     if agent is None:
         return {
             "error": f"Agent offline. Reason: {INIT_ERROR}",
-            "fallback": "Using deterministic AI features (recommendations, anomalies, NL query).",
+            "fallback": "Using deterministic AI features.",
         }
 
-    # Inject store context into the question
     full_question = question
     if store_id:
         full_question = f"{question}\n\n[Store ID for all tool calls: {store_id}]"
 
     try:
-        from agents.retail_agent import SYSTEM_PROMPT
-        result = await agent.ainvoke(
-             {"messages": [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=full_question)]}
+        # 25-second timeout so Vercel proxy never cuts us off
+        result = await asyncio.wait_for(
+            agent.ainvoke(
+                {"messages": [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=full_question)]}
+            ),
+            timeout=25.0,
         )
 
+        messages = result.get("messages", [])
         final_message = messages[-1] if messages else None
-        
-        # Defensive parsing: Gemini 3 content might be a list of dict blocks
-        raw_content = final_message.content if final_message else "No response generated."
-        if isinstance(raw_content, list):
-            # Extract text blocks
-            text_blocks = [blk.get("text", "") for blk in raw_content if isinstance(blk, dict) and "text" in blk]
-            answer = "\n".join(text_blocks) if text_blocks else str(raw_content)
-        else:
-            answer = str(raw_content)
 
-        # Extract tool call trace for transparency
+        # Defensive: Gemini content can be str or list-of-dicts
+        raw = final_message.content if final_message else "No response generated."
+        if isinstance(raw, list):
+            parts = [b.get("text", "") for b in raw if isinstance(b, dict) and "text" in b]
+            answer = "\n".join(parts) if parts else str(raw)
+        else:
+            answer = str(raw)
+
         tool_calls_trace = []
         for msg in messages:
             if hasattr(msg, "tool_calls") and msg.tool_calls:
@@ -128,9 +130,12 @@ async def run_agent_query(
             "answer": answer,
             "tools_invoked": tool_calls_trace,
             "reasoning_steps": len(messages),
-            "agent": "NorthStar Retail Intelligence Agent (Gemini 1.5 Flash + LangGraph)",
+            "agent": "NorthStar Retail Intelligence Agent (Gemini 2.0 Flash + LangGraph)",
         }
 
+    except asyncio.TimeoutError:
+        logger.warning("Agent query timed out after 25s for: %s", question)
+        return {"error": "The agent took too long to respond. Please try a simpler question."}
     except Exception as e:
-        logger.error("Agent query failed: %s", e)
+        logger.error("Agent query failed: %s", e, exc_info=True)
         return {"error": f"Agent execution failed: {str(e)}"}
