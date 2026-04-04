@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/:path*",
+      "destination": "https://northstar-ops-production.up.railway.app/auth/:path*"
+    },
+    {
+      "source": "/inventory/:path*",
+      "destination": "https://inventory-service-production-0ade.up.railway.app/inventory/:path*"
+    },
+    {
+      "source": "/sales/:path*",
+      "destination": "https://sales-service-production-81c4.up.railway.app/sales/:path*"
+    },
+    {
+      "source": "/ai/:path*",
+      "destination": "https://ai-service-production-7e09.up.railway.app/ai/:path*"
+    }
+  ]
+}
