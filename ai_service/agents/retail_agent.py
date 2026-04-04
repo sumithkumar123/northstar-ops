@@ -66,7 +66,7 @@ def create_retail_agent():
         agent = create_react_agent(
             llm,
             ALL_TOOLS,
-            state_modifier=SYSTEM_PROMPT,
+            messages_modifier=SYSTEM_PROMPT,
         )
         logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
         INIT_ERROR = None
