@@ -5,6 +5,10 @@
 **Submission Date:** April 4, 2026
 **Hackathon:** Centific Premier Hackathon 2.0 — NorthStar Outfitters Case Study
 
+**🌐 Live Demo:** `[Insert Deployment Link Here]`
+**🎥 Video Walkthrough (Required):** `[Insert YouTube/Loom Link Here]`
+**💻 Source Code:** `[Insert GitHub Repo Link Here]`
+
 ---
 
 ![NorthStar Outfitters — Login Screen](screenshots/00_login.png)
@@ -26,6 +30,43 @@ The system was designed around three constraints inherent to multi-store retail:
 ---
 
 ## Architecture Overview
+
+```mermaid
+graph TD
+    classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:white;
+    classDef proxy fill:#10b981,stroke:#047857,stroke-width:2px,color:white;
+    classDef gateway fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:white;
+    classDef service fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:white;
+    classDef internal fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:white;
+    classDef db fill:#334155,stroke:#0f172a,stroke-width:2px,color:white;
+
+    Browser["User's Browser / PWA<br><i>React 18 + Vite + Tailwind + TS</i>"]:::client
+    
+    Nginx["Nginx (Reverse Proxy)<br><i>Alpine Linux</i>"]:::proxy
+    
+    Gateway["API Gateway (Port 8000)<br><i>JWT RS256 Verification & Routing</i>"]:::gateway
+    
+    Auth["Auth Service (Port 8001)<br><i>login, refresh, RSA keys</i>"]:::service
+    Inventory["Inventory Service (Port 8002)<br><i>SELECT FOR UPDATE locks</i>"]:::service
+    Sales["Sales Service (Port 8003)<br><i>Idempotency, Tax Engine</i>"]:::service
+    AI["AI Service (Internal)<br><i>Recommendations, Anomalies</i>"]:::internal
+    
+    DB[("PostgreSQL 16<br><i>Isolated Schemas</i>")]:::db
+
+    Browser -- "HTTP (Port 3000)" --> Nginx
+    Nginx -- "/auth, /inventory, /sales, /ai" --> Gateway
+    Gateway -- "Validates Token & Injects Headers" --> Auth
+    Gateway --> Inventory
+    Gateway --> Sales
+    Gateway --> AI
+    
+    Auth -- "auth schema" --> DB
+    Inventory -- "inventory schema" --> DB
+    Sales -- "sales schema" --> DB
+    AI -- "Cross-schema read-only" --> DB
+```
+
+### System Topology (Text Representation)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -755,6 +796,20 @@ northstar/
     └── init/
         └── 00_schemas.sql      # CREATE SCHEMA auth; CREATE SCHEMA inventory; CREATE SCHEMA sales;
 ```
+
+---
+
+## AI Guardrails & Rapid Development Methodology
+
+To meet the timeframe while delivering a rigorous microservices architecture, I actively embraced Centific’s vision of AI-augmented engineering, directly addressing the **"AI-assisted development guardrails"** requirement from the evaluation criteria.
+
+**Safe AI Code Generation:**
+I leveraged AI tooling (like Gemini/Cursor) primarily for rapid scaffolding (React UI components, Docker boilerplate, and basic CRUD data models). This accelerated the low-value typing so I could focus purely on engineering the complex, high-value domain logic:
+1. **Concurrency Controls:** I hand-designed the idempotent `SELECT FOR UPDATE` locking to prevent POS overselling.
+2. **Offline Resilience:** I engineered the client-first UUID retry strategy for the mobile POS.
+3. **Data Security:** I built the cross-schema database isolation and the RS256 JWT validation layers.
+
+**Guardrails Implemented:** By acting as the "Senior Reviewer" to AI's "Junior Developer," I ensured no proprietary business logic or PII was sent to external permissive models, all generated code was audited for OWASP risks, and the system's own AI features were securely restricted within manager/admin RBAC boundaries.
 
 ---
 
