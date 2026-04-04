@@ -28,7 +28,7 @@ pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _BASE_DB = os.environ.get(
     "DATABASE_URL",
     "postgresql+asyncpg://northstar:northstar_pass@postgres/northstar",
-)
+).replace("postgresql://", "postgresql+asyncpg://", 1)
 AUTH_DB = _BASE_DB
 INV_DB = _BASE_DB
 
