@@ -179,7 +179,7 @@ async def agent_status(request: Request):
     
     return {
         "agent_online": agent is not None,
-        "model": "gemini-2.0-flash" if agent else None,
+        "model": "gemini-1.5-flash" if agent else None,
         "framework": "LangGraph ReAct" if agent else None,
         "tools_available": [t.name for t in ALL_TOOLS],
         "autonomous_loops": ["RestockSentinel (10min)", "GuardianSentinel (5min)"] if agent else [],

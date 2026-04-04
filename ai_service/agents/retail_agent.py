@@ -59,7 +59,7 @@ def create_retail_agent():
 
     try:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-flash-latest",
             google_api_key=GEMINI_API_KEY,
             temperature=0,
             max_tokens=2048,
@@ -68,7 +68,7 @@ def create_retail_agent():
             llm,
             ALL_TOOLS,
         )
-        logger.info("NorthStar Retail Agent initialized: Gemini 2.0 Flash + %d tools", len(ALL_TOOLS))
+        logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
         INIT_ERROR = None
         return agent
     except Exception as e:
@@ -97,12 +97,12 @@ async def run_agent_query(
         full_question = f"{question}\n\n[Store ID for all tool calls: {store_id}]"
 
     try:
-        # 25-second timeout so Vercel proxy never cuts us off
+        # 55-second timeout so Vercel proxy never cuts us off (or we cut it first)
         result = await asyncio.wait_for(
             agent.ainvoke(
                 {"messages": [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=full_question)]}
             ),
-            timeout=25.0,
+            timeout=55.0,
         )
 
         messages = result.get("messages", [])
@@ -130,11 +130,11 @@ async def run_agent_query(
             "answer": answer,
             "tools_invoked": tool_calls_trace,
             "reasoning_steps": len(messages),
-            "agent": "NorthStar Retail Intelligence Agent (Gemini 2.0 Flash + LangGraph)",
+            "agent": "NorthStar Retail Intelligence Agent (Gemini 1.5 Flash + LangGraph)",
         }
 
     except asyncio.TimeoutError:
-        logger.warning("Agent query timed out after 25s for: %s", question)
+        logger.warning("Agent query timed out after 55s for: %s", question)
         return {"error": "The agent took too long to respond. Please try a simpler question."}
     except Exception as e:
         logger.error("Agent query failed: %s", e, exc_info=True)

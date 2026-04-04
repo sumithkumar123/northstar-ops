@@ -125,48 +125,69 @@ async def detect_transaction_anomalies(store_id: str, lookback_days: int = 90) -
         lookback_days: How many days of history to analyze (default: 90)
     """
     async with AsyncSessionLocal() as db:
+        # Optimization: Calculate Z-score directly in SQL using Window Functions
         result = await db.execute(text("""
-            SELECT id, total, cashier_id, paid_at, payment_method
+            WITH stats AS (
+                SELECT
+                    AVG(total) as mean_val,
+                    STDDEV(total) as std_val
+                FROM sales.sales_orders
+                WHERE store_id = :store_id
+                  AND status = 'paid'
+                  AND paid_at >= NOW() - make_interval(days => :days)
+            ),
+            anomalies AS (
+                SELECT
+                    o.id,
+                    o.total,
+                    o.paid_at,
+                    o.payment_method,
+                    s.mean_val,
+                    s.std_val,
+                    ABS(o.total - s.mean_val) / NULLIF(s.std_val, 0) as z_score
+                FROM sales.sales_orders o, stats s
+                WHERE o.store_id = :store_id
+                  AND o.status = 'paid'
+                  AND o.paid_at >= NOW() - make_interval(days => :days)
+            )
+            SELECT * FROM anomalies
+            WHERE z_score > 2.5
+            ORDER BY z_score DESC
+        """), {"store_id": store_id, "days": lookback_days})
+
+        rows = result.fetchall()
+        
+        # We still need the base stats for the summary
+        stats_result = await db.execute(text("""
+            SELECT
+                COUNT(*) as total_count,
+                AVG(total) as mean_val,
+                STDDEV(total) as std_val
             FROM sales.sales_orders
             WHERE store_id = :store_id
               AND status = 'paid'
               AND paid_at >= NOW() - make_interval(days => :days)
-            ORDER BY paid_at DESC
         """), {"store_id": store_id, "days": lookback_days})
-
-        orders = result.fetchall()
-
-        if len(orders) < 5:
-            return json.dumps({
-                "status": "insufficient_data",
-                "message": f"Only {len(orders)} orders found. Need at least 5 for meaningful anomaly detection.",
-                "anomalies": []
-            })
-
-        totals = [float(o.total) for o in orders]
-        mean = sum(totals) / len(totals)
-        std = math.sqrt(sum((x - mean) ** 2 for x in totals) / len(totals)) or 0.001
+        stats = stats_result.fetchone()
 
         anomalies = []
-        for o, total_val in zip(orders, totals):
-            z = abs(total_val - mean) / std
-            if z > 2.5:
-                anomalies.append({
-                    "order_id": str(o.id),
-                    "total": round(total_val, 2),
-                    "z_score": round(z, 2),
-                    "paid_at": o.paid_at.isoformat(),
-                    "payment_method": o.payment_method,
-                    "suspected_cause": (
-                        "Potential fraud or gift-card stuffing" if total_val > mean
-                        else "Possible pricing error or missed items"
-                    ),
-                })
+        for r in rows:
+            anomalies.append({
+                "order_id": str(r.id),
+                "total": round(float(r.total), 2),
+                "z_score": round(float(r.z_score), 2),
+                "paid_at": r.paid_at.isoformat(),
+                "payment_method": r.payment_method,
+                "suspected_cause": (
+                    "Potential fraud or gift-card stuffing" if float(r.total) > float(r.mean_val)
+                    else "Possible pricing error or missed items"
+                ),
+            })
 
         return json.dumps({
-            "orders_analyzed": len(orders),
-            "mean_order_value": round(mean, 2),
-            "std_deviation": round(std, 2),
+            "orders_analyzed": stats.total_count,
+            "mean_order_value": round(float(stats.mean_val or 0), 2),
+            "std_deviation": round(float(stats.std_val or 0), 2),
             "anomaly_threshold": "z-score > 2.5",
             "anomalies_found": len(anomalies),
             "anomalies": anomalies
