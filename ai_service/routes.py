@@ -175,6 +175,8 @@ async def agent_status(request: Request):
     """Check if the LangGraph agent is online and which tools are available."""
     agent = getattr(request.app.state, "agent", None)
     from agents.tools import ALL_TOOLS
+    from agents.retail_agent import INIT_ERROR
+    
     return {
         "agent_online": agent is not None,
         "model": "gemini-1.5-flash" if agent else None,
@@ -182,6 +184,7 @@ async def agent_status(request: Request):
         "tools_available": [t.name for t in ALL_TOOLS],
         "autonomous_loops": ["RestockSentinel (10min)", "GuardianSentinel (5min)"] if agent else [],
         "message": "Agent ready" if agent else "Set GEMINI_API_KEY to enable agentic features",
+        "init_error": INIT_ERROR,
     }
 
 

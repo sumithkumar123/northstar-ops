@@ -1,20 +1,6 @@
-"""
-NorthStar Retail Intelligence Agent
-====================================
-Built on LangGraph's ReAct (Reason + Act) pattern using Google Gemini Flash.
-
-How it works:
-1. A manager's question (or a scheduled trigger) enters as a HumanMessage.
-2. Gemini Flash reads the question and decides which tool(s) to call.
-3. Tool calls hit the live PostgreSQL database and return real data.
-4. Gemini reasons over the results and decides whether to call more tools or answer.
-5. This loop repeats until the agent has enough information to give a final answer.
-
-The LLM never hardcodes which tools to call — it decides based on the question.
-That's what makes this truly agentic.
-"""
 import os
 import logging
+import traceback
 from typing import Optional
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -25,7 +11,11 @@ from agents.tools import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+# Add .strip() to handle accidental spaces from copy-pasting the key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+
+# Store initialization error globally so the health endpoint can report it
+INIT_ERROR = None
 
 SYSTEM_PROMPT = """You are the NorthStar Retail Intelligence Agent — an autonomous AI system \
 managing retail operations for NorthStar Outfitters' 48 specialty stores across the US and UK.
@@ -59,9 +49,11 @@ def create_retail_agent():
     Create the LangGraph ReAct agent with Gemini Flash as the reasoning engine.
     Returns None if GEMINI_API_KEY is not configured (graceful degradation).
     """
+    global INIT_ERROR
+    
     if not GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY not set — agentic AI features disabled. "
-                       "Set GEMINI_API_KEY env var to enable LangGraph agent.")
+        INIT_ERROR = "GEMINI_API_KEY environment variable is empty or not set."
+        logger.warning(INIT_ERROR)
         return None
 
     try:
@@ -77,9 +69,12 @@ def create_retail_agent():
             state_modifier=SYSTEM_PROMPT,
         )
         logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
+        INIT_ERROR = None
         return agent
     except Exception as e:
-        logger.error("Failed to initialize retail agent: %s", e)
+        INIT_ERROR = f"Failed to initialize LangGraph agent: {str(e)}"
+        logger.error(INIT_ERROR)
+        traceback.print_exc()
         return None
 
 
@@ -90,22 +85,10 @@ async def run_agent_query(
 ) -> dict:
     """
     Run a single query through the agent and return the result with reasoning chain.
-
-    Args:
-        question: Natural language question from manager
-        store_id: Store context (appended to question if provided)
-        agent: The compiled LangGraph graph (from create_retail_agent())
-
-    Returns:
-        {
-            "answer": str,           # final response
-            "tool_calls": list,      # which tools were called and in what order
-            "reasoning_steps": int   # how many steps the agent took
-        }
     """
     if agent is None:
         return {
-            "error": "Agentic AI not configured. Please set GEMINI_API_KEY environment variable.",
+            "error": f"Agent offline. Reason: {INIT_ERROR}",
             "fallback": "Using deterministic AI features (recommendations, anomalies, NL query).",
         }
 
