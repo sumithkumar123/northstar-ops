@@ -141,7 +141,7 @@ export default function DashboardPage() {
                       <Radar size={12} className="text-violet-300" />
                       Background Scans
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-white">Checks {storeName} every 5-10 minutes</p>
+                    <p className="mt-2 text-sm font-semibold text-white">Rule checks every 5-10 min, AI for flagged cases</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-slate-400">

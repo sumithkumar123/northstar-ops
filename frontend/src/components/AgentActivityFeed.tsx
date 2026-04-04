@@ -223,7 +223,7 @@ export default function AgentActivityFeed() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Clock3 size={12} className="text-violet-400" />
-              Autonomous scans every 5-10 min
+              SQL scans every 5-10 min, AI only for flagged stores
             </span>
           </div>
 
