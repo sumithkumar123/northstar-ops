@@ -51,6 +51,7 @@ export default function AgentActivityFeed() {
   const [events, setEvents]           = useState<AgentEvent[]>([])
   const [loading, setLoading]         = useState(true)
   const [agentOnline, setAgentOnline] = useState(false)
+  const [agentStatusMessage, setAgentStatusMessage] = useState('')
   const [question, setQuestion]       = useState('')
   const [queryLoading, setQueryLoading] = useState(false)
   const [agentResponse, setAgentResponse] = useState<any>(null)
@@ -71,10 +72,16 @@ export default function AgentActivityFeed() {
 
   async function fetchStatus() {
     try {
-      const status = await api.get<{ agent_online: boolean }>('/ai/agent/status')
+      const status = await api.get<{ agent_online: boolean; message?: string; init_error?: string; model?: string }>('/ai/agent/status')
       setAgentOnline(status.agent_online)
+      setAgentStatusMessage(
+        status.agent_online
+          ? (status.model ? `Connected to ${status.model}` : 'Agent is online')
+          : (status.init_error || status.message || 'Agent is offline')
+      )
     } catch {
       setAgentOnline(false)
+      setAgentStatusMessage('Unable to reach AI service')
     }
   }
 
@@ -178,7 +185,11 @@ export default function AgentActivityFeed() {
           <div className="flex items-start gap-2 px-3 py-2.5 bg-slate-900/40 rounded-lg border border-slate-700/50">
             <Bot size={13} className="text-slate-600 shrink-0 mt-0.5" />
             <p className="text-xs text-slate-500 leading-relaxed">
-              Add <span className="font-mono text-slate-400 bg-slate-800 px-1 rounded">GEMINI_API_KEY</span> to Railway env variables to activate the AI agent.
+              {agentStatusMessage || 'Add '}
+              {!agentStatusMessage && (
+                <span className="font-mono text-slate-400 bg-slate-800 px-1 rounded">GEMINI_API_KEY</span>
+              )}
+              {!agentStatusMessage && ' to Railway env variables to activate the AI agent.'}
             </p>
           </div>
         )}

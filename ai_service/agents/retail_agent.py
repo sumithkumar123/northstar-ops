@@ -2,11 +2,12 @@ import os
 import logging
 import asyncio
 import traceback
-from typing import Optional
+from typing import Optional, List
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
+import google.generativeai as genai
 
 from agents.tools import ALL_TOOLS
 
@@ -17,6 +18,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 
 # Store initialization error globally so the health endpoint can report it
 INIT_ERROR = None
+CURRENT_MODEL = None
+
+DEFAULT_MODEL_CANDIDATES = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+]
 
 SYSTEM_PROMPT = """You are the NorthStar Retail Intelligence Agent — an autonomous AI system \
 managing retail operations for NorthStar Outfitters' 48 specialty stores across the US and UK.
@@ -45,21 +53,96 @@ OPERATING PRINCIPLES:
 Keep answers concise, factual, and immediately actionable."""
 
 
+def get_model_candidates() -> List[str]:
+    """
+    Candidate models in priority order.
+    Supports either GEMINI_MODEL for a single preferred value or
+    GEMINI_MODEL_CANDIDATES for a comma-separated override list.
+    """
+    explicit_model = os.getenv("GEMINI_MODEL", "").strip()
+    explicit_candidates = os.getenv("GEMINI_MODEL_CANDIDATES", "").strip()
+
+    ordered: List[str] = []
+    if explicit_model:
+        ordered.append(explicit_model)
+
+    if explicit_candidates:
+        ordered.extend([m.strip() for m in explicit_candidates.split(",") if m.strip()])
+
+    ordered.extend(DEFAULT_MODEL_CANDIDATES)
+
+    deduped: List[str] = []
+    seen = set()
+    for model in ordered:
+        if model not in seen:
+            deduped.append(model)
+            seen.add(model)
+    return deduped
+
+
+def discover_supported_model() -> str:
+    """
+    Ask Google which generateContent-capable models are available for this key,
+    then choose the best matching configured candidate. Falls back to the first
+    candidate if discovery is unavailable so local/dev boot still works.
+    """
+    candidates = get_model_candidates()
+
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        available = [
+            m.name.replace("models/", "")
+            for m in genai.list_models()
+            if "generateContent" in getattr(m, "supported_generation_methods", [])
+        ]
+
+        for candidate in candidates:
+            if candidate in available:
+                return candidate
+
+        # As a safe fallback, use the first available flash model if present.
+        for available_model in available:
+            if "flash" in available_model:
+                logger.warning(
+                    "Configured Gemini candidates %s not found. Falling back to available model %s",
+                    candidates,
+                    available_model,
+                )
+                return available_model
+
+        if available:
+            logger.warning(
+                "No flash model matched. Falling back to first available generateContent model %s",
+                available[0],
+            )
+            return available[0]
+    except Exception as exc:
+        logger.warning("Gemini model discovery failed, using configured fallback list: %s", exc)
+
+    return candidates[0]
+
+
+def get_current_model() -> Optional[str]:
+    return CURRENT_MODEL
+
+
 def create_retail_agent():
     """
     Create the LangGraph ReAct agent with Gemini Flash as the reasoning engine.
     Returns None if GEMINI_API_KEY is not configured (graceful degradation).
     """
-    global INIT_ERROR
+    global INIT_ERROR, CURRENT_MODEL
 
     if not GEMINI_API_KEY:
         INIT_ERROR = "GEMINI_API_KEY environment variable is empty or not set."
+        CURRENT_MODEL = None
         logger.warning(INIT_ERROR)
         return None
 
     try:
+        selected_model = discover_supported_model()
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model=selected_model,
             version="v1",
             google_api_key=GEMINI_API_KEY,
             temperature=0,
@@ -69,10 +152,12 @@ def create_retail_agent():
             llm,
             ALL_TOOLS,
         )
-        logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
+        CURRENT_MODEL = selected_model
+        logger.info("NorthStar Retail Agent initialized: %s + %d tools", selected_model, len(ALL_TOOLS))
         INIT_ERROR = None
         return agent
     except Exception as e:
+        CURRENT_MODEL = None
         INIT_ERROR = f"Failed to initialize LangGraph agent: {str(e)}"
         logger.error(INIT_ERROR)
         traceback.print_exc()
@@ -131,7 +216,7 @@ async def run_agent_query(
             "answer": answer,
             "tools_invoked": tool_calls_trace,
             "reasoning_steps": len(messages),
-            "agent": "NorthStar Retail Intelligence Agent (Gemini 1.5 Flash + LangGraph)",
+            "agent": f"NorthStar Retail Intelligence Agent ({CURRENT_MODEL or 'Gemini'} + LangGraph)",
         }
 
     except asyncio.TimeoutError:
