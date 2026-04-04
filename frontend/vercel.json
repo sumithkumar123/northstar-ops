@@ -15,6 +15,10 @@
     {
       "source": "/ai/:path*",
       "destination": "https://ai-service-production-7e09.up.railway.app/ai/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
