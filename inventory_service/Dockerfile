@@ -5,4 +5,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY inventory_service/ .
 COPY shared/ /app/shared/
 ENV PYTHONPATH=/app
-CMD ["sh", "-c", "alembic -c migrations/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8002}"]
+CMD ["sh", "-c", "alembic -c migrations/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8002"]
