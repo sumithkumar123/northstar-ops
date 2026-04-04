@@ -93,49 +93,59 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex flex-col lg:flex-row h-full overflow-hidden bg-slate-950">
       {/* Products panel */}
-      <div className="flex-1 p-6 overflow-auto border-r border-slate-800">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto border-b lg:border-b-0 lg:border-r border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-white">Point of Sale</h1>
         </div>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search products…"
-          className="w-full mb-4 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
-        />
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="relative mb-4">
+          <span className="absolute inset-y-0 left-3 flex items-center text-slate-500">
+             <ShoppingCart size={14} />
+          </span>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search products…"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map(item => (
             <button
               key={item.product_id}
               onClick={() => addToCart(item)}
               disabled={item.quantity === 0}
-              className="bg-slate-800 border border-slate-700 hover:border-sky-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-sky-900/20 group"
+              className="bg-slate-800 border border-slate-700 hover:border-sky-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-sky-900/20 group relative overflow-hidden"
             >
               <div className="flex items-start justify-between mb-2">
-                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded font-bold ${
                   item.quantity === 0 ? 'bg-red-900/50 text-red-300' :
                   item.below_reorder ? 'bg-amber-900/50 text-amber-300' :
                   'bg-slate-700 text-slate-400'
                 }`}>
-                  {item.quantity === 0 ? 'Out' : `${item.quantity} left`}
+                  {item.quantity === 0 ? 'Out of Stock' : `${item.quantity} In Stock`}
                 </span>
                 <Plus size={14} className="text-slate-600 group-hover:text-sky-400 transition-colors" />
               </div>
-              <p className="text-sm font-medium text-white leading-tight mb-1">{item.name}</p>
-              <p className="text-xs text-slate-500 mb-2">{item.sku}</p>
-              <p className="text-base font-bold text-sky-400">${item.unit_price.toFixed(2)}</p>
+              <p className="text-sm font-semibold text-white leading-tight mb-0.5 truncate">{item.name}</p>
+              <p className="text-[10px] text-slate-500 mb-2 font-mono uppercase">{item.sku}</p>
+              <p className="text-lg font-bold text-sky-400">${item.unit_price.toFixed(2)}</p>
+              
+              {/* Add hint on hover */}
+              <div className="absolute inset-0 bg-sky-600/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </button>
           ))}
         </div>
       </div>
 
       {/* Cart panel */}
-      <div className="w-80 shrink-0 bg-slate-900 flex flex-col">
-        <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+      <div className="w-full lg:w-80 xl:w-96 shrink-0 bg-slate-900/50 flex flex-col h-[400px] lg:h-full border-t lg:border-t-0 border-slate-800">
+        <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2 bg-slate-900/80">
           <ShoppingCart size={18} className="text-sky-400" />
           <span className="font-semibold text-white">Cart</span>
-          <span className="ml-auto text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">{cart.length} items</span>
+          <span className="ml-auto text-xs bg-sky-600/20 text-sky-400 px-2 py-0.5 rounded-full font-bold border border-sky-600/30">
+            {cart.reduce((s, i) => s + i.cartQty, 0)} items
+          </span>
         </div>
 
         <div className="flex-1 overflow-auto px-4 py-3 space-y-2">

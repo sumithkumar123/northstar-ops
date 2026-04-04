@@ -91,16 +91,16 @@ export default function InventoryPage() {
   })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Inventory</h1>
         <button onClick={() => refetch()} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
-          <RefreshCw size={14} /> Refresh
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> Refresh
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
@@ -108,29 +108,30 @@ export default function InventoryPage() {
             className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500" />
         </div>
         <button onClick={() => setAlertsOnly(!alertsOnly)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
+          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
             alertsOnly ? 'bg-amber-900/40 border-amber-700 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
           }`}>
           <AlertTriangle size={14} /> Alerts only
         </button>
       </div>
 
-      {/* Table */}
+      {/* Table Wrapper */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-700 text-left">
-              {['SKU', 'Product', 'Qty', 'Reorder At', 'Status', ...(canEdit ? [''] : [])].map(h => (
-                <th key={h} className="px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Loading…</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No items found</td></tr>
-            ) : filtered.map(item => (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px] lg:min-w-full">
+            <thead>
+              <tr className="border-b border-slate-700 text-left">
+                {['SKU', 'Product', 'Qty', 'Reorder At', 'Status', ...(canEdit ? ['Action'] : [])].map(h => (
+                  <th key={h} className="px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Loading…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No items found</td></tr>
+              ) : filtered.map(item => (
               <tr key={item.inventory_id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
                 <td className="px-4 py-3 font-mono text-xs text-slate-400">{item.sku}</td>
                 <td className="px-4 py-3 text-white font-medium">{item.name}</td>
@@ -152,7 +153,8 @@ export default function InventoryPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {adjusting && <AdjustModal item={adjusting} onClose={() => setAdjusting(null)} />}

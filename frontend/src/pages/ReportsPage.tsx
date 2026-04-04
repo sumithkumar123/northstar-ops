@@ -61,7 +61,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-white">Reports & AI Insights</h1>
 
       {/* Charts row */}
@@ -171,15 +171,15 @@ export default function ReportsPage() {
             <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
               <MessageSquare size={16} className="text-sky-400" /> Ask a Question
             </h2>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 value={nlQuery} onChange={e => setNlQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && runNlQuery()}
-                placeholder="e.g. What are the top selling products?"
+                placeholder="e.g. What are the top selling?"
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
               />
               <button onClick={runNlQuery} disabled={nlLoading}
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm transition-colors flex items-center gap-1.5">
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 shrink-0">
                 <Send size={14} />{nlLoading ? '…' : 'Ask'}
               </button>
             </div>

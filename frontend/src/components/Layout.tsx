@@ -1,7 +1,8 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { authStore } from '../store/auth'
 import {
-  LayoutDashboard, Package, ShoppingCart, BarChart3, LogOut, Mountain, Sparkles
+  LayoutDashboard, Package, ShoppingCart, BarChart3, LogOut, Mountain, Sparkles, Menu, X
 } from 'lucide-react'
 
 const STORES = [
@@ -26,7 +27,14 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function Layout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const user = authStore.getUser()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // Close menu on navigation on mobile
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [location.pathname])
 
   const navItems = [
     { to: '/',          label: 'Dashboard',    icon: LayoutDashboard },
@@ -39,11 +47,39 @@ export default function Layout() {
   const roleKey = user?.role ?? ''
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-950">
+      {/* Mobile Header */}
+      <header className="lg:hidden h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-5 shrink-0 z-50">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center shadow-sm">
+            <Mountain size={16} className="text-white" />
+          </div>
+          <span className="font-bold text-base tracking-tight text-white uppercase italic">NorthStar</span>
+        </div>
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          aria-label="Toggle menu"
+        >
+          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </header>
+
+      {/* Sidebar Mobile Overlay */}
+      {isMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
-        {/* Brand */}
-        <div className="px-5 py-5 border-b border-slate-800">
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-50 transition-transform duration-300
+        ${isMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Brand (Desktop only) */}
+        <div className="hidden lg:block px-5 py-5 border-b border-slate-800">
           <div className="flex items-center gap-2.5 mb-0.5">
             <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center shadow-sm">
               <Mountain size={16} className="text-white" />
@@ -53,8 +89,16 @@ export default function Layout() {
           <p className="text-xs text-slate-500 ml-10">Operations Platform</p>
         </div>
 
+        {/* Brand (Mobile top) */}
+        <div className="lg:hidden px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+           <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Navigation</span>
+           <button onClick={() => setIsMenuOpen(false)} className="text-slate-500 hover:text-white lg:hidden">
+              <X size={18} />
+           </button>
+        </div>
+
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.filter(n => !n.hidden).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -77,18 +121,20 @@ export default function Layout() {
         </nav>
 
         {/* User info */}
-        <div className="px-4 py-4 border-t border-slate-800 space-y-3">
-          <div className="px-1 space-y-1.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[roleKey] ?? 'bg-slate-700 text-slate-300 border-slate-600'}`}>
-              {ROLE_LABELS[roleKey] ?? roleKey}
-            </span>
+        <div className="px-4 py-4 border-t border-slate-800 space-y-3 bg-slate-900/50">
+          <div className="px-1 space-y-1.5 text-center lg:text-left">
+            <div className="flex lg:inline-flex justify-center lg:justify-start">
+              <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${ROLE_COLORS[roleKey] ?? 'bg-slate-700 text-slate-300 border-slate-600'}`}>
+                {ROLE_LABELS[roleKey] ?? roleKey}
+              </span>
+            </div>
             <p className="text-xs text-slate-400 truncate">
               {user?.store_id ? STORE_MAP[user.store_id] ?? 'Unknown store' : 'All stores · 3 locations'}
             </p>
           </div>
           <button
             onClick={() => { authStore.logout(); navigate('/login') }}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center justify-center lg:justify-start gap-2 w-full px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-red-900/40"
           >
             <LogOut size={15} />
             Sign out
@@ -96,9 +142,11 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto bg-slate-950">
-        <Outlet />
+      {/* Main Container */}
+      <main className="flex-1 overflow-auto bg-slate-950 relative flex flex-col pt-0 lg:pt-0">
+        <div className="flex-1 w-full max-w-full overflow-x-hidden">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
