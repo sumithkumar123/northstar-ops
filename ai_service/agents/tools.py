@@ -18,6 +18,12 @@ from sqlalchemy import text
 
 from database import AsyncSessionLocal
 
+STORE_NAMES = {
+    "b1000000-0000-0000-0000-000000000001": "NYC Flagship",
+    "b1000000-0000-0000-0000-000000000002": "Boston Outlet",
+    "b1000000-0000-0000-0000-000000000003": "London Central",
+}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tool 1 — Inventory snapshot
@@ -418,6 +424,143 @@ async def get_store_performance_summary(store_id: str, days: int = 7) -> str:
         })
 
 
+# -----------------------------------------------------------------------------
+# Tool 7 - Inter-store inventory rebalance advisor
+# -----------------------------------------------------------------------------
+@tool
+async def recommend_interstore_transfer(store_id: str, days: int = 7) -> str:
+    """
+    Recommend whether the current store should request inventory from another store
+    before placing a new purchase order. This is useful when a manager asks about
+    transfers, stock rebalancing, weekend coverage, or how to avoid stockouts faster.
+
+    The tool compares:
+    - target store stock and sales velocity
+    - other stores' stock and sales velocity
+    - each donor store's surplus after keeping its own safety buffer
+
+    Args:
+        store_id: UUID of the destination store that needs stock support
+        days: Recent sales window used to estimate velocity (default: 7)
+    """
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(text("""
+            WITH recent_sales AS (
+                SELECT
+                    so.store_id,
+                    soi.product_id,
+                    COALESCE(SUM(soi.quantity)::float / :days, 0) AS daily_velocity
+                FROM sales.sales_order_items soi
+                JOIN sales.sales_orders so ON so.id = soi.order_id
+                WHERE so.status = 'paid'
+                  AND so.paid_at >= NOW() - make_interval(days => :days)
+                GROUP BY so.store_id, soi.product_id
+            )
+            SELECT
+                inv.store_id,
+                inv.product_id,
+                p.name,
+                p.sku,
+                p.reorder_point,
+                inv.quantity AS current_stock,
+                COALESCE(rs.daily_velocity, 0) AS daily_velocity
+            FROM inventory.inventory inv
+            JOIN inventory.products p ON p.id = inv.product_id
+            LEFT JOIN recent_sales rs
+              ON rs.store_id = inv.store_id
+             AND rs.product_id = inv.product_id
+            ORDER BY p.name, inv.store_id
+        """), {"days": days})
+
+        rows = [dict(r._mapping) for r in result.fetchall()]
+
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        row["current_stock"] = int(row["current_stock"])
+        row["reorder_point"] = int(row["reorder_point"])
+        row["daily_velocity"] = round(float(row["daily_velocity"] or 0), 2)
+        grouped.setdefault(str(row["product_id"]), []).append(row)
+
+    recommendations = []
+    for product_rows in grouped.values():
+        target = next((r for r in product_rows if str(r["store_id"]) == store_id), None)
+        if not target:
+            continue
+
+        target_daily_velocity = max(float(target["daily_velocity"]), 0.1)
+        days_remaining = round(target["current_stock"] / target_daily_velocity, 1)
+        target_risk = target["current_stock"] <= target["reorder_point"] or days_remaining <= 7
+        if not target_risk:
+            continue
+
+        best_donor = None
+        for donor in product_rows:
+            donor_store_id = str(donor["store_id"])
+            if donor_store_id == store_id:
+                continue
+
+            donor_daily_velocity = max(float(donor["daily_velocity"]), 0.1)
+            donor_safety_buffer = max(
+                donor["reorder_point"],
+                int(round(donor_daily_velocity * 14))
+            )
+            donor_surplus = donor["current_stock"] - donor_safety_buffer
+            if donor_surplus <= 0:
+                continue
+
+            if best_donor is None or donor_surplus > best_donor["donor_surplus"]:
+                best_donor = {
+                    "store_id": donor_store_id,
+                    "store_name": STORE_NAMES.get(donor_store_id, donor_store_id),
+                    "current_stock": donor["current_stock"],
+                    "daily_velocity": donor_daily_velocity,
+                    "donor_surplus": donor_surplus,
+                }
+
+        if not best_donor:
+            continue
+
+        desired_qty = max(
+            target["reorder_point"] - target["current_stock"],
+            int(round(target_daily_velocity * 7 - target["current_stock"]))
+        )
+        recommended_qty = max(1, min(best_donor["donor_surplus"], desired_qty))
+
+        recommendations.append({
+            "product_id": str(target["product_id"]),
+            "product_name": target["name"],
+            "sku": target["sku"],
+            "destination_store_id": store_id,
+            "destination_store_name": STORE_NAMES.get(store_id, store_id),
+            "destination_stock": target["current_stock"],
+            "destination_daily_velocity": round(target_daily_velocity, 2),
+            "destination_days_remaining": days_remaining,
+            "recommended_transfer_qty": recommended_qty,
+            "donor_store_id": best_donor["store_id"],
+            "donor_store_name": best_donor["store_name"],
+            "donor_stock": best_donor["current_stock"],
+            "donor_daily_velocity": round(best_donor["daily_velocity"], 2),
+            "donor_surplus_after_buffer": best_donor["donor_surplus"],
+            "reason": (
+                f"{target['name']} is projected to run low at {STORE_NAMES.get(store_id, store_id)} "
+                f"while {best_donor['store_name']} has enough surplus to cover a transfer."
+            ),
+        })
+
+    recommendations.sort(key=lambda item: item["destination_days_remaining"])
+
+    return json.dumps({
+        "destination_store_id": store_id,
+        "destination_store_name": STORE_NAMES.get(store_id, store_id),
+        "analysis_period_days": days,
+        "transfer_recommendations": recommendations,
+        "recommended_action": (
+            "Use inter-store transfers first for urgent gaps, then place external replenishment orders "
+            "for anything donors cannot fully cover."
+        ),
+    })
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # All tools exported for agent binding
 # ─────────────────────────────────────────────────────────────────────────────
@@ -428,4 +571,5 @@ ALL_TOOLS = [
     get_seasonal_demand_forecast,
     compute_restock_quantities,
     get_store_performance_summary,
+    recommend_interstore_transfer,
 ]

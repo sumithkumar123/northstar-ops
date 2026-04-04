@@ -1,681 +1,490 @@
-# NorthStar Outfitters — Agentic AI Retail Intelligence Platform
-## Centific Premier Hackathon 2.0 | Submission
+# NorthStar Outfitters
+## Agentic Retail Operations Platform
 
-**Submitted by:** Ratnala Sumith Kumar
-**Date:** April 2026
-**Hackathon:** Centific Premier Hackathon 2.0 — NorthStar Outfitters Case Study
+**Submitted by:** Ratnala Sumith Kumar  
+**Assessment:** Centific Premier Hackathon 2.0  
+**Case Study:** Mobile-First Operations Platform for a Specialty Retail Chain  
+**Stack:** Python + FastAPI + PostgreSQL + React + LangGraph + Gemini
 
-**🌐 Live Demo:** [northstar-frontend.vercel.app](https://northstar-frontend.vercel.app)
-**💻 Source Code:** [github.com/sumithkumar123/northstar-ops](https://github.com/sumithkumar123/northstar-ops)
-
----
-
-## Executive Summary
-
-This submission transforms the NorthStar Outfitters retail management problem into a **Multi-Agent AI System** — not a database application with an AI widget bolted on, but a platform where autonomous AI agents actively manage store operations 24/7.
-
-**The core insight:** A store manager managing 48 stores cannot manually check every inventory level, review every transaction for fraud, or know which products to push for each season. That's what agents are for.
-
-The system ships three autonomous agent loops plus a conversational LangGraph agent that managers can query in plain English. The agents:
-
-1. **Autonomously scan** all stores every 5–10 minutes without any human trigger
-2. **Reason across multiple data sources** (inventory + sales velocity + seasonal patterns) before acting
-3. **Chain tool calls dynamically** — the LLM decides which data to fetch based on what it finds
-4. **Write a full audit trail** — managers can see exactly what the AI decided and why
-5. **Deploy in minutes** — the entire 8-service stack deploys via a single `docker compose up`
+**Live Demo:** [northstar-ops-sage.vercel.app](https://northstar-ops-sage.vercel.app/)  
+**Source Code:** [github.com/sumithkumar123/northstar-ops](https://github.com/sumithkumar123/northstar-ops)
 
 ---
 
-## 1. System Architecture
+## 1. Executive Summary
 
-### 1.1 High-Level Overview
+NorthStar Outfitters operates 48 stores across two countries. A store manager needs one system that can:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    NorthStar Agentic AI Platform                         │
-│                                                                          │
-│   User's Browser (React 18 PWA)                                          │
-│   ┌─────────────┬───────────────┬──────────────┬─────────────────────┐  │
-│   │  Dashboard  │  POS Terminal │  Inventory   │  Reports & AI       │  │
-│   │  + Agent    │  (Checkout)   │  Management  │  (Insights)         │  │
-│   │  Activity   │               │              │                     │  │
-│   └─────────────┴───────────────┴──────────────┴─────────────────────┘  │
-└──────────────────────────────────┬──────────────────────────────────────┘
-                                   │ HTTP/REST
-                         ┌─────────▼─────────┐
-                         │   Nginx Proxy      │
-                         │   (Alpine Linux)   │
-                         │   SPA routing +    │
-                         │   /api forwarding  │
-                         └─────────┬──────────┘
-                                   │
-                         ┌─────────▼──────────────────────┐
-                         │      API Gateway (Port 8000)    │
-                         │                                 │
-                         │  RS256 JWT Verification         │
-                         │  → Injects x-user-id,           │
-                         │    x-user-role, x-store-id      │
-                         │    headers for all downstream   │
-                         └──┬─────────┬──────────┬────────┘
-                            │         │          │
-            ┌───────────────┘   ┌─────┘    ┌────┘
-            ▼                   ▼          ▼
-   ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-   │  Auth Service  │  │Inventory Svc   │  │  Sales Service │
-   │  (Port 8001)   │  │  (Port 8002)   │  │  (Port 8003)   │
-   │                │  │                │  │                │
-   │  RS256 signing │  │ SELECT FOR     │  │  Order state   │
-   │  Refresh token │  │ UPDATE locks   │  │  machine       │
-   │  bcrypt hashes │  │ Low-stock      │  │  Tax engine    │
-   │  3-tier RBAC   │  │ alerts         │  │  offline_id    │
-   └───────┬────────┘  └───────┬────────┘  └───────┬────────┘
-           │                   │                   │
-           └───────────────────┴─────────────┬─────┘
-                                             │
-                                             ▼
-                                    ┌────────────────┐
-                                    │  PostgreSQL 16  │
-                                    │                │
-                                    │  ┌──────────┐  │
-                                    │  │   auth   │  │
-                                    │  ├──────────┤  │
-                                    │  │inventory │  │
-                                    │  ├──────────┤  │
-                                    │  │  sales   │  │
-                                    │  └──────────┘  │
-                                    └────────────────┘
-```
+- run checkout and billing safely
+- keep inventory synchronized in near real time
+- work on mobile and low-end devices
+- surface anomalies, restock risks, and business insights quickly
+- explain why the AI recommended an action
 
-### 1.2 Agentic AI Layer (The Core Innovation)
+This submission delivers that as a microservices-based retail platform with an **agentic AI layer**, not just a database dashboard with a chat box attached.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         AI SERVICE — Agentic Core                           │
-│                         ─────────────────────────                           │
-│                                                                             │
-│   FastAPI Lifespan                                                          │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │               LangGraph ReAct Agent (Brain)                          │  │
-│   │               ─────────────────────────────                         │  │
-│   │   Model: Google Gemini 1.5 Flash                                     │  │
-│   │   Framework: LangGraph (ReAct loop)                                  │  │
-│   │                                                                      │  │
-│   │   Input Question                                                     │  │
-│   │       ↓                                                              │  │
-│   │   [REASON] "I need to check stock first..."                          │  │
-│   │       ↓                                                              │  │
-│   │   [CALL TOOL] check_inventory_levels(store_id)                       │  │
-│   │       ↓                                                              │  │
-│   │   [OBSERVE] "5 units of Trail Shoes, reorder=10"                     │  │
-│   │       ↓                                                              │  │
-│   │   [REASON] "Below reorder. Check sales velocity..."                  │  │
-│   │       ↓                                                              │  │
-│   │   [CALL TOOL] analyze_sales_velocity(store_id, days=7)              │  │
-│   │       ↓                                                              │  │
-│   │   [OBSERVE] "Selling 4 units/day, weekend spike expected"            │  │
-│   │       ↓                                                              │  │
-│   │   [CALL TOOL] compute_restock_quantities(store_id)                  │  │
-│   │       ↓                                                              │  │
-│   │   [FINAL ANSWER] "URGENT: Order 50 Trail Shoes now. 1.2 days left." │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   Agent Tools (6 live DB-backed tools)                                      │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │  check_inventory_levels  │  analyze_sales_velocity                  │  │
-│   │  detect_transaction_anomalies  │  get_seasonal_demand_forecast      │  │
-│   │  compute_restock_quantities    │  get_store_performance_summary     │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   Autonomous Sentinels (APScheduler — no human trigger required)            │
-│   ┌─────────────────────────────────────────────────────────────────────┐  │
-│   │  RestockSentinel (every 10 min) → scans all 3 stores for restock    │  │
-│   │  GuardianSentinel (every 5 min) → scans for transaction anomalies   │  │
-│   └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│   Agent Audit Log (ai_agent_events table)                                   │
-│   Every decision written to DB with full reasoning chain                    │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+The platform combines:
+
+- **Transactional services** for auth, inventory, sales, and gateway routing
+- **A retail agent** that chooses tools dynamically based on the question
+- **Autonomous sentinels** that scan stores every 5-10 minutes
+- **An audit trail** so managers can verify what the AI did, which tools it called, and whether the action was reasonable
+
+The core value is simple: instead of making managers inspect five screens and connect the dots manually, the system can answer operational questions in plain English and show the tool trace behind the answer.
 
 ---
 
-## 2. What Makes This Genuinely Agentic
+## 2. Evaluation Criteria Check
 
-Most "AI" in retail software is just `if stock < threshold: alert()`. This system is different.
+The case study asked for a mobile-first retail operations platform with microservices, secure auth, inventory and billing workflows, BI dashboards, and responsible agentic AI.
 
-### Traditional AI (What we did NOT build):
-```python
-# This is NOT agentic — just a function call with a rule
-def check_stock():
-    items = db.query("SELECT * WHERE quantity < reorder_point")
-    return items  # Returns data. No reasoning. No tools. No agency.
-```
+### Coverage Matrix
 
-### Agentic AI (What we built):
-```
-Manager asks: "Should we reorder Trail Running Shoes before the weekend?"
+| Evaluation Criterion | Status | Notes |
+|---|---|---|
+| Clear microservices-based architecture | **Met** | Separate gateway, auth, inventory, sales, AI service, shared schema contracts, PostgreSQL schemas |
+| Responsive mobile-compatible design | **Met** | React + Tailwind, tablet/mobile-friendly navigation, POS optimized for smaller screens |
+| Secure auth and RBAC | **Met** | RS256 JWT, refresh tokens, role checks at gateway and service layer |
+| Inventory, billing, stock monitoring, replenishment workflows | **Met** | Inventory service, POS checkout, low-stock alerts, replenishment recommendations |
+| Transfer workflow | **Partially met** | Inventory transaction types support `transfer_in` / `transfer_out`; AI now recommends inter-store transfers, but a dedicated transfer execution UI is still phase 2 |
+| BI dashboards and operational reporting | **Met** | Revenue trend, top products, inventory alerts, reports page, performance summaries |
+| Agentic AI recommendations, anomaly detection, conversational querying | **Met** | LangGraph retail agent, anomaly checks, merchandising insights, natural-language querying |
+| Python + PostgreSQL with sound APIs/data design | **Met** | FastAPI services, SQLAlchemy async, PostgreSQL schemas, clear REST routes |
+| Performance and scalability considerations | **Met** | Async services, row locks for stock consistency, stateless AI service, deployment-ready containers |
+| Security, reliability, observability, audit logging | **Met** | JWT, RBAC, health endpoints, audit table, deterministic low-level service boundaries |
+| Intermittent connectivity and low-end devices | **Met** | Offline-safe POS with idempotent `offline_id`, lightweight mobile UI |
+| Maintainability and future ERP/payment readiness | **Met** | Service boundaries, documented APIs, gateway pattern, external integration path clear |
+| Compliance with AI-assisted development guardrails | **Met** | AI restricted to bounded tool use, manager-only access, auditable outputs, no uncontrolled SQL generation |
 
-Agent thinks: "I need to check current stock first."
-Agent calls:  check_inventory_levels("b1000000-...-0001")
-Agent sees:   { "Trail Running Shoes": { "quantity": 5, "reorder_point": 10 } }
+### Honest Gap
 
-Agent thinks: "Below reorder. Is this a fast or slow mover?"
-Agent calls:  analyze_sales_velocity("b1000000-...-0001", days=7)
-Agent sees:   { "Trail Running Shoes": { "daily_velocity": 4.2, "days_remaining": 1.2 } }
+The main gap was that **transfer workflow** was previously implied but not demonstrated strongly enough in the product. To close that, this version adds a new agentic tool:
 
-Agent thinks: "1.2 days of stock. Weekend means higher traffic. URGENT."
-Agent calls:  compute_restock_quantities("b1000000-...-0001")
-Agent sees:   { "recommended_qty": 50, "urgency": "URGENT", "estimated_cost": $6499.50 }
+- `recommend_interstore_transfer`
 
-Agent responds: "URGENT: Trail Running Shoes will stock out in 1.2 days at the current
-                4.2 units/day rate. With the weekend approaching, order 50 units
-                immediately (est. cost: $6,499.50). I based this on 7-day velocity data."
-
-Tools invoked: [check_inventory_levels, analyze_sales_velocity, compute_restock_quantities]
-Reasoning steps: 6
-```
-
-The LLM (Gemini Flash) **decided** which tools to call, **in what order**, and **synthesized a specific recommendation** — not a static query result.
-
-### Why LangGraph?
-
-LangGraph is Google DeepMind's open-source framework for building stateful multi-agent systems. It implements the **ReAct** (Reasoning + Acting) pattern — the same pattern used in production AI agents at Google, Anthropic, and Microsoft.
-
-The ReAct graph has two nodes:
-- **Agent Node:** Gemini Flash reasons and decides its next action
-- **Tool Node:** Executes the chosen tool against the live database
-
-Edges route conditionally: if the LLM returns a tool call → Tool Node. If it returns a final answer → END.
-
-```python
-# The actual agent creation — 3 lines of code, full ReAct loop
-from langgraph.prebuilt import create_react_agent
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
-agent = create_react_agent(llm, ALL_TOOLS, state_modifier=SYSTEM_PROMPT)
-
-# Calling the agent — async, multi-hop, tool-calling capable
-result = await agent.ainvoke({"messages": [HumanMessage(content=question)]})
-```
+This allows the agent to reason about whether a different store can temporarily cover a stock gap before recommending a fresh supplier order.
 
 ---
 
-## 3. Agent Tools — The Agent's "Hands"
+## 3. What We Built
 
-Six production-ready tools give the agent access to all real data. The LLM reads their docstrings to decide when/how to use them:
+### In Plain Terms
 
-| Tool | Purpose | Data Sources |
-|------|---------|-------------|
-| `check_inventory_levels` | Current stock + reorder status for all products | `inventory.inventory JOIN inventory.products` |
-| `analyze_sales_velocity` | Units/day sold + days of stock remaining | `inventory.inventory JOIN sales.sales_order_items` |
-| `detect_transaction_anomalies` | Z-score anomaly detection on order totals | `sales.sales_orders` (last 90 days) |
-| `get_seasonal_demand_forecast` | Season-aware product recommendations with velocity | `inventory + sales` (cross-schema) |
-| `compute_restock_quantities` | Optimal order quantities based on velocity + 14-day buffer | `inventory + sales` |
-| `get_store_performance_summary` | Revenue KPIs, daily trends, top sellers | `sales.sales_orders + sales_order_items` |
+This project is a retail operations control room.
 
-All tools are defined as LangChain `@tool` async functions. They create their own database sessions so they work both in API request context and in background scheduler context.
+Without the AI, a store manager must:
 
----
+1. open inventory
+2. check low-stock items
+3. open sales reports
+4. estimate whether those items are actually moving fast
+5. check if a suspicious transaction looks real
+6. decide whether to reorder, transfer inventory, or ignore
 
-## 4. Autonomous Sentinels — Proactive Operation
+With this system, the manager can ask:
 
-The system runs two background loops that operate without any human trigger:
+> "What products need restocking before the weekend?"  
+> "Can another store transfer stock to mine instead of ordering new units?"  
+> "Summarize my store performance and top products this week."
 
-### Restock Sentinel (every 10 minutes)
-```
-For each of 3 stores:
-    Agent is invoked with goal: "Check inventory and identify stockout risks in next 7 days"
-    Agent calls: check_inventory_levels + analyze_sales_velocity + compute_restock_quantities
-    Agent reasons over results and produces recommendation
-    If recommendation is URGENT/HIGH/MEDIUM: save to ai_agent_events table
-    Manager sees it on next dashboard load
-```
+The agent then:
 
-### Guardian Sentinel (every 5 minutes)
-```
-For each of 3 stores:
-    Agent is invoked with goal: "Scan recent transactions for anomalies"
-    Agent calls: detect_transaction_anomalies
-    If anomalies found: save to ai_agent_events with severity=HIGH
-    Manager is alerted on next page refresh
-```
+1. decides what data it needs
+2. calls the correct retail tools
+3. reasons over the results
+4. answers in manager language
+5. logs the decision in `Agent Activity`
 
-This is the key difference from a scheduled batch job: the **LLM decides what counts as concerning**, not a hardcoded rule. A batch job would fire an alert at `quantity < 10`. The agent considers: quantity, sales velocity, time of week, seasonal demand, and produces a contextual, specific recommendation.
+That is the difference between a normal DB project and an agentic retail operations platform.
 
 ---
 
-## 5. Agent Speed & Effectiveness
+## 4. Architecture Overview
 
-### Why Gemini Flash?
+```mermaid
+flowchart LR
+    U["Manager / Admin / Associate<br/>React Mobile-Friendly UI"] --> G["API Gateway<br/>JWT verification + routing"]
+    G --> A["Auth Service<br/>login, refresh, RS256"]
+    G --> I["Inventory Service<br/>stock, adjustments, alerts"]
+    G --> S["Sales Service<br/>orders, tax, reports"]
+    G --> AI["AI Service<br/>LangGraph retail agent + sentinels"]
 
-| Property | Value |
-|----------|-------|
-| Model | gemini-1.5-flash |
-| Average latency | **< 1.5 seconds per tool call** |
-| Multi-tool query | **< 5 seconds end-to-end** |
-| API cost | Free tier for development; ~$0.0001 per query in production |
-| Context window | 1M tokens — can process entire store history in one call |
+    AI --> T["Retail Tools"]
+    T --> I
+    T --> S
 
-### Why not GPT-4 or Claude?
-
-Gemini Flash is optimized for **high-frequency tool use** — exactly what agents do. It's 10x cheaper and 2x faster than GPT-4 for structured tool-calling tasks while maintaining comparable accuracy on retail operations reasoning.
-
-### Why not a local LLM (Llama, Mistral)?
-
-Local LLMs require ~8GB VRAM and specialized inference infrastructure. For a retail operations platform deployed to commodity cloud containers, an API-based model is more practical and consistently faster.
-
-### The FastAPI + AsyncPG Stack
-
-All database operations are non-blocking async:
-```
-Concurrent POS requests → SQLAlchemy async engine
-                       → asyncpg (non-blocking PostgreSQL driver)
-                       → pool_size=5, max_overflow=10
-                       → ~240 concurrent POS sessions per service instance
+    A --> DB["PostgreSQL 16<br/>auth / inventory / sales schemas"]
+    I --> DB
+    S --> DB
+    AI --> DB
 ```
 
-This means **two cashiers checking out simultaneously never block each other** at the database layer — except during the intentional `SELECT FOR UPDATE` lock that prevents overselling.
+### Why This Structure Matters
+
+- **Gateway** keeps the client simple and centralizes auth enforcement
+- **Inventory** and **Sales** remain deterministic transactional services
+- **AI service** stays isolated, so agent logic can evolve without risking billing or stock integrity
+- **PostgreSQL** uses separate schemas to preserve service boundaries while keeping the prototype deployable
 
 ---
 
-## 6. Service Architecture Deep Dive
+## 5. Service Flow
 
-### Service Communication Flow
+### User-Initiated Agent Query
 
-```
-User Action (e.g., POS Checkout)
-        │
-        │ HTTP POST /sales/orders
-        ▼
-   ┌──────────────────────────────────────────────────┐
-   │               API Gateway (port 8000)             │
-   │                                                  │
-   │  1. Extract Authorization: Bearer <token>        │
-   │  2. RS256 verify with public.pem                 │
-   │  3. Decode: { sub, role, store_id, jti, exp }   │
-   │  4. Inject headers: x-user-id, x-user-role,     │
-   │     x-store-id                                  │
-   │  5. Proxy to sales_service:8003                 │
-   └──────────────────────────────────────────────────┘
-        │
-        │ Internal HTTP (no auth re-verification needed)
-        ▼
-   ┌──────────────────────────────────────────────────┐
-   │               Sales Service (port 8003)           │
-   │                                                  │
-   │  1. Check offline_id uniqueness (idempotency)   │
-   │  2. For each item: call inventory service        │
-   │     → SELECT FOR UPDATE on inventory row        │
-   │     → Validate stock, decrement quantity        │
-   │  3. Calculate tax (country + state code)        │
-   │  4. Create order + items in transaction         │
-   │  5. Return 201 Created with full order          │
-   └──────────────────────────────────────────────────┘
-        │
-        │ PostgreSQL ACID transaction
-        ▼
-   ┌──────────────────────────────────────────────────┐
-   │               PostgreSQL 16                       │
-   │                                                  │
-   │  sales.sales_orders (with UNIQUE offline_id)    │
-   │  sales.sales_order_items                        │
-   │  inventory.inventory (quantity updated)         │
-   └──────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant M as Store Manager
+    participant UI as Dashboard UI
+    participant GW as API Gateway
+    participant AI as AI Service
+    participant Agent as LangGraph Agent
+    participant Tools as Retail Tools
+    participant DB as PostgreSQL
+    participant Feed as Agent Activity
+
+    M->>UI: Ask "Summarize my store performance this week"
+    UI->>GW: POST /ai/agent/query
+    GW->>AI: Forward with verified user/store context
+    AI->>Agent: Run question inside ReAct loop
+    Agent->>Tools: get_store_performance_summary()
+    Tools->>DB: Read sales + top products
+    DB-->>Tools: Live store data
+    Tools-->>Agent: Structured result
+    Agent-->>AI: Final answer + tool trace
+    AI->>DB: Write ai_agent_events audit row
+    AI-->>UI: Natural language answer
+    UI->>Feed: Refresh activity log
 ```
 
-### Agent Query Flow
+### Autonomous Agent Loops
 
+```mermaid
+flowchart TD
+    SCH["FastAPI lifespan starts scheduler"] --> R["Restock Sentinel<br/>every 10 min"]
+    SCH --> G["Guardian Sentinel<br/>every 5 min"]
+
+    R --> RQ["Ask agent to scan inventory risk"]
+    RQ --> RT["Calls inventory + velocity + transfer/restock tools"]
+    RT --> E1["Save RESTOCK_ALERT to ai_agent_events"]
+
+    G --> GQ["Ask agent to scan anomalies"]
+    GQ --> GT["Calls anomaly tool"]
+    GT --> E2["Save ANOMALY_FLAG to ai_agent_events"]
+
+    E1 --> UI["Dashboard Agent Activity"]
+    E2 --> UI
 ```
-Manager asks: "What needs restocking for the weekend?"
-        │
-        │ POST /ai/agent/query
-        ▼
-   ┌──────────────────────────────────────────────────┐
-   │               API Gateway                        │
-   │  RS256 verify → require_role([manager, admin])  │
-   └──────────────────────────────────────────────────┘
-        │
-        ▼
-   ┌──────────────────────────────────────────────────┐
-   │               AI Service (port 8004)              │
-   │                                                  │
-   │  LangGraph ReAct Loop:                          │
-   │  ┌────────────────────────────────────────────┐ │
-   │  │                                            │ │
-   │  │   HumanMessage → Agent Node (Gemini Flash) │ │
-   │  │        │                                   │ │
-   │  │        ├─ calls check_inventory_levels()   │ │
-   │  │        │    └─ SQL → PostgreSQL → result   │ │
-   │  │        │                                   │ │
-   │  │        ├─ calls analyze_sales_velocity()   │ │
-   │  │        │    └─ SQL → PostgreSQL → result   │ │
-   │  │        │                                   │ │
-   │  │        ├─ calls compute_restock_quantities()│ │
-   │  │        │    └─ SQL → PostgreSQL → result   │ │
-   │  │        │                                   │ │
-   │  │        └─ Final Answer (synthesized)       │ │
-   │  │                                            │ │
-   │  └────────────────────────────────────────────┘ │
-   │                                                  │
-   │  Save to ai_agent_events (audit trail)          │
-   └──────────────────────────────────────────────────┘
-        │
-        │ JSON response with:
-        │   answer, tools_invoked, reasoning_steps
-        ▼
-   Dashboard (AgentActivityFeed component)
-```
+
+This addresses the mentor feedback about “how the services flow” and “how they function using agentic AI” much more clearly than the original document did.
 
 ---
 
-## 7. Security Architecture
+## 6. Why This Is Actually Agentic
 
-### RS256 Asymmetric JWT
+Many projects say "AI" but only mean:
 
-The system uses asymmetric RSA signing — only the auth service holds the private key:
+- a chatbot wrapped around static text
+- a keyword router
+- a hardcoded rule like `if stock < threshold then alert`
 
-```
-keygen container (startup-only)
-┌────────────────────────┐
-│  generate_keys.py      │   private.pem → auth_service ONLY
-│  RSA-2048 key pair     │   public.pem  → gateway + all services
-└────────────────────────┘
+This project is different.
 
-JWT Payload:
-{
-  "sub": "user-uuid",
-  "role": "store_manager",
-  "store_id": "b1000000-...-0001",
-  "jti": "unique-token-id",    ← prevents replay attacks
-  "exp": 1743700000
-}
-```
-
-**Why this matters for agents:** The agent endpoints (`/ai/agent/query`, `/ai/agent/events`) require `require_role([store_manager, regional_admin])`. A sales associate CANNOT query the agent — their JWT role is checked at both the gateway layer and the service layer independently (defence in depth).
-
-### RBAC Matrix
-
-| Capability | sales_associate | store_manager | regional_admin |
-|-----------|:-:|:-:|:-:|
-| POS checkout | ✓ | ✓ | ✓ |
-| View inventory | ✓ | ✓ | ✓ |
-| Adjust stock | ✗ | ✓ | ✓ |
-| Agent queries | ✗ | ✓ | ✓ |
-| Agent events feed | ✗ | ✓ | ✓ |
-| AI recommendations | ✗ | ✓ | ✓ |
-| Anomaly detection | ✗ | ✓ | ✓ |
-| Cross-store visibility | ✗ | ✗ | ✓ |
-
----
-
-## 8. Concurrency: Preventing Overselling
-
-The most critical correctness requirement in retail: two cashiers cannot sell the last unit simultaneously.
-
-```
-WITHOUT PROTECTION:
-  Cashier A reads quantity = 1
-  Cashier B reads quantity = 1
-  Cashier A decrements → quantity = 0
-  Cashier B decrements → quantity = -1  ← OVERSOLD
-
-WITH SELECT FOR UPDATE:
-  Cashier A acquires row lock first
-  → Reads quantity = 1
-  → Decrements to 0
-  → Commits, releases lock
-
-  Cashier B was blocked on the lock
-  → Now reads quantity = 0
-  → Returns HTTP 409: "Insufficient stock: have 0, requested 1"
-  → Frontend shows "Out of stock" — customer cannot be oversold
-```
+### Traditional Pattern
 
 ```python
-async with db.begin():
-    result = await db.execute(
-        select(Inventory)
-        .where(Inventory.store_id == store_id, Inventory.product_id == product_id)
-        .with_for_update()   # ← PostgreSQL exclusive row lock
-    )
-    inv = result.scalar_one_or_none()
-    if inv.quantity + delta < 0:
-        raise HTTPException(409, "Insufficient stock")
-    inv.quantity += delta
-    # Lock released on commit
+def low_stock_report(store_id):
+    return db.query("SELECT * FROM inventory WHERE quantity <= reorder_point")
 ```
 
+That returns data, but it does not decide anything.
+
+### Our Agentic Pattern
+
+The retail agent uses LangGraph ReAct:
+
+1. **Reason:** what data do I need first?
+2. **Act:** call a retail tool
+3. **Observe:** inspect the returned result
+4. **Reason again:** do I need another tool?
+5. **Finish:** synthesize a specific action for the manager
+
+Example:
+
+> "Should I reorder Trail Running Shoes before the weekend, or can another store transfer stock to me?"
+
+The agent can decide to call:
+
+1. `check_inventory_levels`
+2. `analyze_sales_velocity`
+3. `recommend_interstore_transfer`
+4. `compute_restock_quantities`
+
+It can then answer something like:
+
+> "NYC will run short within 2 days. Boston has enough surplus to transfer 12 units immediately. After that, place a supplier order for 30 more units to cover the weekend and 14-day buffer."
+
+That is useful because the AI is not just formatting data. It is selecting tools, chaining them, and deciding on the right operational response.
+
 ---
 
-## 9. Offline/Mobile Idempotency
+## 7. Agent Tooling
 
-Mobile POS devices lose connectivity. Without protection, a retry creates duplicate orders.
+The current AI service exposes these retail tools:
 
-### Solution: Client-Generated UUID + UNIQUE Constraint
+| Tool | What It Does | Why It Matters |
+|---|---|---|
+| `check_inventory_levels` | Current stock + reorder status | Base signal for stock questions |
+| `analyze_sales_velocity` | Units sold per day + days of stock left | Converts stock numbers into urgency |
+| `detect_transaction_anomalies` | Finds suspicious orders with Z-score logic | Fraud / shrinkage signal |
+| `get_seasonal_demand_forecast` | Highlights products relevant to current season | Merchandising support |
+| `compute_restock_quantities` | Recommends purchase quantities | Actionable replenishment |
+| `get_store_performance_summary` | Revenue, AOV, daily trends, top products | Manager performance view |
+| `recommend_interstore_transfer` | Suggests donor stores with safe surplus | Stronger transfer workflow story |
 
-```typescript
-// Phase 1: Client generates UUID BEFORE sending (any number of retries = same UUID)
-const offlineId = crypto.randomUUID()
+### Why the New Transfer Tool Matters
 
-// Phase 2: Server deduplicates on the UUID
-async def create_order(offline_id: str | None):
-    if offline_id:
-        existing = await db.execute(
-            select(SalesOrder).where(SalesOrder.offline_id == offline_id)
-        )
-        if existing.scalar_one_or_none():
-            return existing_order  # Idempotent — return existing, don't create duplicate
+This makes the project stronger against the rubric and the mentor feedback.
 
-# Database column: offline_id String(64) UNIQUE
-# Even concurrent retries hitting the DB simultaneously:
-# → One succeeds, one gets UniqueConstraint violation → handled gracefully
+It shows that the AI is not only:
+
+- answering from one table
+- generating a summary
+
+It is now also helping with a cross-service operational decision:
+
+- destination store demand
+- donor store surplus
+- timing before stockout
+- transfer-before-reorder recommendation
+
+That is a more convincing example of agentic AI in a retail context.
+
+---
+
+## 8. How the User Can Verify the AI
+
+One of the strongest product improvements is the **Agent Activity** panel.
+
+It now acts like an AI work log.
+
+Each activity row can show:
+
+- **who acted**: Retail Agent / Restock Sentinel / Guardian Sentinel
+- **what happened**: business summary or alert
+- **which tools were used**
+- **why it was logged**
+- **severity**
+- **time**
+
+This matters for trust.
+
+A manager can now see:
+
+> "The agent answered my question by calling `get_store_performance_summary`"
+
+and decide:
+
+- yes, that was the correct tool
+- or no, the agent should have also checked inventory / anomaly / transfer tools
+
+So `Agent Activity` is not just decoration. It is an explainability and validation surface.
+
+---
+
+## 9. Screens and UX
+
+### Dashboard
+
+![Dashboard](./screenshots/01_dashboard.png)
+
+### Reports and AI
+
+![Reports](./screenshots/04_reports_ai.png)
+
+### POS
+
+![POS](./screenshots/02_pos.png)
+
+### UI Notes
+
+The dashboard has been reworked to make the agent feel like the primary control surface:
+
+- the agent command panel is now top-aligned and sticky on desktop
+- the audit feed is visually separated as an explainability surface
+- tool traces are visible in both the immediate response and the activity log
+- the visual system now uses a more intentional command-center style instead of a generic admin template feel
+
+This directly addresses the concern that the project should not look like a standard DB app with an AI widget bolted on.
+
+---
+
+## 10. Security, Reliability, and Auditability
+
+### Security
+
+- RS256 JWT auth
+- refresh tokens
+- role-based access for regional admins, store managers, sales associates
+- gateway-enforced and service-enforced authorization
+
+### Reliability
+
+- health endpoints per service
+- containerized deployment
+- isolated transactional services for inventory and sales
+- AI service failure does not break base retail workflows
+
+### Auditability
+
+- every agent event is stored in `ai_agent_events`
+- managers can see the event summary, severity, time, and tool trace
+- this keeps the AI explainable and reviewable
+
+### Guardrails
+
+- no open-ended agent access to mutate arbitrary DB state
+- tool surface is bounded and explicit
+- manager-only access to agent endpoints
+- deterministic legacy endpoints remain available for fallback
+
+---
+
+## 11. Performance and Scalability Story
+
+The case study asked for 1,200 concurrent users and seasonal spikes.
+
+This prototype addresses that through design choices rather than synthetic benchmark claims:
+
+- **FastAPI async services** keep I/O non-blocking
+- **SQLAlchemy async + asyncpg** scale better under concurrent API load
+- **`SELECT FOR UPDATE`** protects inventory consistency during concurrent checkout
+- **Stateless AI service** can be scaled independently of auth/inventory/sales
+- **Gateway pattern** keeps the client talking to a single public edge
+- **Container-based deployment** keeps services independently deployable
+
+### Practical Speed Story
+
+- transactional reads are simple REST calls
+- the agent usually answers in one to a few tool calls
+- the audit trail gives immediate confirmation that the AI finished the workflow
+
+The goal is not just “use AI.” The goal is “make AI fast enough and bounded enough to be operationally useful.”
+
+---
+
+## 12. Offline and Low-End Device Constraints
+
+The case study explicitly mentioned intermittent connectivity and tablets/low-end Android devices.
+
+This prototype addresses that by:
+
+- keeping the client lightweight
+- using role-focused screens instead of overloaded workflows
+- supporting offline-safe order retries through `offline_id`
+- building a compact POS layout suitable for floor staff
+
+### Idempotent POS Retry Pattern
+
+```python
+if offline_id already exists:
+    return existing_order
+else:
+    create_order()
 ```
 
----
-
-## 10. Technology Stack
-
-| Layer | Technology | Why This Choice |
-|-------|-----------|----------------|
-| Frontend | React 18 + TypeScript + Vite | Type-safe, fast HMR, PWA-ready |
-| Styling | Tailwind CSS v3 | Mobile-first utilities, responsive by default |
-| State | TanStack Query v5 | Cache, refetch, offline-aware |
-| Backend | FastAPI (Python 3.12) | Async-native, auto-OpenAPI, production-ready |
-| ORM | SQLAlchemy 2.0 async + asyncpg | Non-blocking DB I/O for concurrent POS |
-| Agent Framework | LangGraph (Google) | Production ReAct agent loops, stateful graph |
-| Agent LLM | Google Gemini 1.5 Flash | Fast (< 1.5s), cheap, excellent tool-calling |
-| Scheduler | APScheduler (AsyncIOScheduler) | Integrates with FastAPI event loop |
-| Auth | RS256 JWT (python-jose) + bcrypt | Asymmetric — auth service holds private key |
-| Database | PostgreSQL 16 | ACID, advisory locks, `gen_random_uuid()` |
-| Container | Docker + Docker Compose | Single-command deployment |
-| Proxy | Nginx 1.27 Alpine | Static serving + API proxy |
+That prevents double-posting when a shaky connection causes the same payment attempt to retry.
 
 ---
 
-## 11. Deployment
+## 13. Deployment
 
-### One-Command Local Deploy
+### Local
 
 ```bash
-git clone <repo>
-cd northstar
-
-# Start entire platform (8 services)
-docker compose up -d
-
-# Wait ~15s for postgres healthcheck, then seed demo data
+docker compose up --build
 docker compose exec auth_service python /scripts/seed.py
-
-# Open the platform
-open http://localhost:3000
 ```
 
-**Time to first login: under 3 minutes.**
+### Hosted Prototype
 
-### Environment Variables Required
+- **Frontend:** Vercel
+- **Python services:** Railway
+- **Database:** PostgreSQL
 
-```bash
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/northstar
-GEMINI_API_KEY=<your-key>          # From Google AI Studio (free tier available)
-SECRET_KEY=<jwt-secret>
-```
-
-### Service URLs
-
-| Service | URL | Role |
-|---------|-----|------|
-| Frontend PWA | http://localhost:3000 | User interface |
-| API Gateway | http://localhost:8000 | Single entry point |
-| Auth Service | http://localhost:8001 | JWT issuance |
-| Inventory Service | http://localhost:8002 | Stock management |
-| Sales Service | http://localhost:8003 | POS + reporting |
-| AI/Agent Service | http://localhost:8004 | LangGraph agents |
-| PostgreSQL | localhost:5432 | Database |
-
-### Demo Credentials
-
-| Role | Email | Password |
-|------|-------|---------|
-| Regional Admin | admin@northstar.com | Admin123! |
-| Store Manager | manager@northstar.com | Manager123! |
-| Sales Associate | assoc@northstar.com | Assoc123! |
+This satisfies the “deployable” expectation from the mentor feedback. The system is not just designed; it is actually running across a hosted frontend and backend.
 
 ---
 
-## 12. API Reference
+## 14. Mentor Feedback Check
 
-### New Agentic Endpoints
+The earlier feedback was essentially:
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/ai/agent/query` | Manager+ | LangGraph ReAct agent — multi-tool reasoning |
-| GET | `/ai/agent/events` | Manager+ | Agent audit log — all autonomous decisions |
-| GET | `/ai/agent/status` | All | Agent online status + available tools |
+> "The service structure is good, but it still sounds like a normal DB project. Show how it is agentic, how the services flow, how it works fast, and how it is deployable."
 
-**Example: Agent Query**
-```bash
-curl -X POST http://localhost:8000/ai/agent/query \
-  -H "Authorization: Bearer $MANAGER_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What needs urgent restocking this week?", "store_id": "b1000000-...-0001"}'
-```
+### What Has Now Been Addressed
 
-**Response:**
-```json
-{
-  "question": "What needs urgent restocking this week?",
-  "answer": "URGENT: Trail Running Shoes (5 units, 1.2 days remaining at 4.2/day rate). Order 50 units immediately (~$6,500). Merino Wool Base Layer is LOW priority at 15 units with 12 days remaining. No other items need attention this week.",
-  "tools_invoked": [
-    {"tool": "check_inventory_levels", "args": {"store_id": "..."}},
-    {"tool": "analyze_sales_velocity", "args": {"store_id": "...", "days": 7}},
-    {"tool": "compute_restock_quantities", "args": {"store_id": "..."}}
-  ],
-  "reasoning_steps": 6,
-  "agent": "NorthStar Retail Intelligence Agent (Gemini 1.5 Flash + LangGraph)"
-}
-```
+| Feedback Theme | Current State |
+|---|---|
+| "Sounds like a normal DB project" | Improved: the dashboard foregrounds the agent, the document explains ReAct flow, and the tool trace is visible |
+| "Agentic AI is not clear" | Improved: explicit tool-chaining examples, sentinels, activity audit, transfer advisor |
+| "Architecture is not clear" | Improved: mermaid architecture + sequence flow |
+| "How do services run?" | Improved: gateway/service/tool/database flow documented |
+| "How fast/effective is it?" | Improved: async services, stateless AI, bounded tool calls, deployable hosted stack |
+| "Deployable annav kada" | Met: Vercel + Railway deployment exists |
 
-### Original Deterministic Endpoints (maintained for compatibility)
+### Still Worth Improving Later
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/auth/login` | None | RS256 JWT issuance |
-| POST | `/auth/refresh` | Refresh token | Token rotation |
-| GET | `/inventory/stores/{id}` | All | Store inventory |
-| GET | `/inventory/stores/{id}/alerts` | All | Low-stock items |
-| PATCH | `/inventory/stores/{id}/products/{pid}` | Manager+ | Stock adjustment |
-| POST | `/sales/orders` | All | POS checkout |
-| GET | `/sales/reports/weekly` | All | 7-day revenue |
-| GET | `/ai/recommendations/{store_id}` | Manager+ | Season recommendations |
-| GET | `/ai/anomalies` | Manager+ | Z-score anomalies |
-| POST | `/ai/query` | Manager+ | NL keyword query |
+- full transfer execution UI instead of only AI recommendation + inventory transaction types
+- richer observability such as OpenTelemetry traces
+- live ERP and payment gateway integration
+- richer regional admin cross-store orchestration dashboard
 
 ---
 
-## 13. Key Engineering Decisions
+## 15. Final Positioning
 
-| Decision | Choice | Alternatives | Reason |
-|----------|--------|-------------|--------|
-| Agent LLM | Gemini 1.5 Flash | GPT-4, Claude 3.5, local Llama | Fastest tool-calling latency, free tier, Google's own agent framework |
-| Agent framework | LangGraph | LangChain LCEL, AutoGen, CrewAI | Production-grade stateful graphs; ReAct pattern with minimal boilerplate |
-| Agent tools | Async functions with own DB sessions | Dependency injection | Works in both API and background scheduler context |
-| Scheduler | APScheduler AsyncIOScheduler | Celery, external cron | Runs inside FastAPI event loop — no extra infrastructure |
-| Audit trail | PostgreSQL table | File logs | Queryable, persistent, survives restarts; managers can audit via API |
-| Auth signing | RS256 asymmetric | HS256 symmetric | Only auth_service needs private key; agents and all services verify with public key only |
-| Concurrency | SELECT FOR UPDATE | Optimistic locking | Simpler; no retry logic; predictable latency for POS |
-| NL queries (v1) | Keyword → SQL | Dynamic SQL | Zero injection risk; offline-capable |
-| NL queries (v2) | LangGraph agent | Additional keyword rules | LLM understands intent, not just keywords; chains tools based on context |
+This project is best described as:
 
----
+> **A retail operations platform where microservices run the core business safely, and an agentic AI layer reasons across those services to help managers act faster.**
 
-## 14. Project Structure
+It stands out because:
 
-```
-northstar/
-├── docker-compose.yml          # 8 services orchestrated
-├── shared/
-│   ├── schemas.py              # UserRole, TokenPayload, OrderStatus
-│   └── dependencies.py         # get_current_user, require_role
-├── auth_service/               # RS256 JWT, bcrypt, refresh tokens
-├── inventory_service/          # SELECT FOR UPDATE, low-stock alerts
-├── sales_service/              # Idempotency, tax engine, reporting
-├── ai_service/                 # ← AGENTIC AI CORE
-│   ├── main.py                 # FastAPI + lifespan (scheduler start/stop)
-│   ├── agent_events.py         # ai_agent_events SQLAlchemy model
-│   ├── agents/
-│   │   ├── tools.py            # 6 live DB-backed LangChain tools
-│   │   ├── retail_agent.py     # LangGraph ReAct agent (Gemini Flash)
-│   │   └── scheduler.py        # APScheduler autonomous loops
-│   ├── routes.py               # /ai/agent/query, /agent/events, /agent/status
-│   ├── queries.py              # Original deterministic queries (maintained)
-│   └── database.py
-├── gateway/                    # RS256 verify, header injection, httpx proxy
-├── frontend/
-│   └── src/
-│       ├── components/
-│       │   ├── Layout.tsx      # Mobile-responsive sidebar + hamburger nav
-│       │   └── AgentActivityFeed.tsx  # ← AGENT UI (query + audit feed)
-│       └── pages/
-│           ├── DashboardPage.tsx      # KPI + AgentActivityFeed integrated
-│           ├── POSPage.tsx
-│           ├── InventoryPage.tsx
-│           └── ReportsPage.tsx
-├── scripts/
-│   ├── generate_keys.py        # RSA-2048 key generation
-│   └── seed.py                 # Demo data seeding
-└── postgres/
-    └── init/00_schemas.sql     # CREATE SCHEMA auth/inventory/sales
-```
+- the AI is connected to real tools, not just a prompt box
+- the agent can work proactively through scheduled sentinels
+- users can verify the AI through tool traces and audit logs
+- the product is deployable and structured for future expansion
+
+If judged as a case-study prototype, it is strongest in:
+
+- architecture
+- RBAC/security
+- operational dashboards
+- replenishment/anomaly agent workflows
+- explainable agent behavior
+
+The main area still not fully production-complete is a dedicated **transfer execution workflow UI**, but the new inter-store transfer advisor makes that path explicit and materially strengthens the agentic retail story.
 
 ---
 
-## 15. Scalability Path
+## 16. Appendix: Example Agent Trace
 
-The agent architecture scales independently from the transactional services:
+**Question**
 
-1. **Scale agents horizontally:** The AI service is stateless — multiple instances can run schedulers independently (APScheduler uses try-acquire pattern automatically)
-2. **Agent parallelism:** LangGraph supports parallel tool execution — future version can call inventory + sales velocity tools simultaneously
-3. **Multi-store fan-out:** Scheduler iterates stores sequentially now; simple change to `asyncio.gather()` makes it parallel across all 48 stores
-4. **Model upgrade path:** Switch from `gemini-1.5-flash` to `gemini-1.5-pro` in one line for more complex reasoning tasks
+> "Summarize my store performance and top products this week."
 
----
+**Observed behavior**
 
-## 16. Conclusion
+- model receives manager question
+- agent selects `get_store_performance_summary`
+- tool reads paid orders and top products
+- agent writes a concise summary
+- `Agent Activity` stores the result with the tool trace
 
-This submission delivers:
+**Why this is important**
 
-- **Genuine Agentic AI:** LangGraph ReAct agent with Gemini Flash, 6 live database tools, dynamic multi-hop tool chaining — not keyword matching or hardcoded rules
-- **Autonomous Operation:** Two background sentinels (Restock + Guardian) run every 5–10 minutes without human trigger, surface issues proactively
-- **Complete Audit Trail:** Every agent decision logged with full reasoning chain — managers know exactly what the AI did and why
-- **Production Security:** RS256 asymmetric JWT, three-tier RBAC enforced at gateway + service layers, agents restricted to manager+ roles
-- **Concurrency Safety:** SELECT FOR UPDATE prevents overselling; async connection pools handle 240+ concurrent POS sessions
-- **Offline Resilience:** Client-UUID idempotency makes wireless POS retries completely safe
-- **One-Command Deploy:** 8 containerized services running in under 3 minutes
-
-The platform addresses every operational need from the NorthStar case study: cashiers have a mobile-first POS that works offline, managers have an AI that proactively manages their store, regional admins have cross-store visibility — and every decision made by the AI is auditable and explainable.
+The user can now verify that the selected tool was appropriate. That makes the system easier to trust, debug, and demonstrate during evaluation.
 
 ---
 
-*Submitted for Centific Premier Hackathon 2.0 — NorthStar Outfitters Case Study*
-*Ratnala Sumith Kumar | April 2026*
+*Prepared for the Centific NorthStar Outfitters case study assessment.*

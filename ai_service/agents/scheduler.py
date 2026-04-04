@@ -121,7 +121,15 @@ async def run_restock_sentinel():
                     store_id=store_id,
                     summary=answer[:300],
                     reasoning=f"Agent called: check_inventory_levels + analyze_sales_velocity + compute_restock_quantities",
-                    payload={"store_id": store_id, "full_response": answer},
+                    payload={
+                        "store_id": store_id,
+                        "full_response": answer,
+                        "tools_used": [
+                            {"tool": "check_inventory_levels"},
+                            {"tool": "analyze_sales_velocity"},
+                            {"tool": "compute_restock_quantities"},
+                        ],
+                    },
                 )
                 logger.info("[RestockSentinel] %s alert saved for store %s", severity, store_id)
 
@@ -165,7 +173,11 @@ async def run_guardian_sentinel():
                     store_id=store_id,
                     summary=answer[:300],
                     reasoning="Agent called: detect_transaction_anomalies",
-                    payload={"store_id": store_id, "full_response": answer},
+                    payload={
+                        "store_id": store_id,
+                        "full_response": answer,
+                        "tools_used": [{"tool": "detect_transaction_anomalies"}],
+                    },
                 )
                 logger.info("[GuardianSentinel] Anomaly event saved for store %s", store_id)
 

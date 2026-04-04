@@ -113,7 +113,12 @@ async def agent_query(
                     "store_id": store_id,
                     "summary": result["answer"][:300] if result.get("answer") else "Query processed",
                     "reasoning": f"Tools invoked: {', '.join(t['tool'] for t in result.get('tools_invoked', []))}",
-                    "payload": json.dumps({"question": body.question, "tools_used": result.get("tools_invoked", [])}),
+                    "payload": json.dumps({
+                        "question": body.question,
+                        "tools_used": result.get("tools_invoked", []),
+                        "reasoning_steps": result.get("reasoning_steps"),
+                        "model": result.get("model"),
+                    }),
                     "created_at": datetime.now(timezone.utc),
                 })
                 await db.commit()

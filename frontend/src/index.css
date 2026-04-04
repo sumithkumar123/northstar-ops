@@ -2,4 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-slate-950 text-slate-100; }
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  @apply text-slate-100;
+  background-color: #020617;
+  background-image:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 28%),
+    radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.08), transparent 24%),
+    linear-gradient(180deg, #020617 0%, #08101f 52%, #020617 100%);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.display-font {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  letter-spacing: -0.03em;
+}

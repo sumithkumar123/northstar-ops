@@ -42,6 +42,10 @@ You have access to real-time store data through specialized tools. Your responsi
 4. PERFORMANCE ANALYST: Interpret sales data and give managers clear, actionable insights
    about store health, revenue trends, and top performers.
 
+5. TRANSFER COORDINATOR: When one store is likely to stock out, check whether another
+   store can cover the gap faster through an inter-store transfer before recommending
+   a fresh supplier order.
+
 OPERATING PRINCIPLES:
 - Always use real data from tools before making recommendations. Never guess.
 - When analyzing inventory issues, check BOTH stock levels AND sales velocity.
@@ -222,6 +226,7 @@ async def run_agent_query(
             "answer": answer,
             "tools_invoked": tool_calls_trace,
             "reasoning_steps": len(messages),
+            "model": CURRENT_MODEL,
             "agent": f"NorthStar Retail Intelligence Agent ({CURRENT_MODEL or 'Gemini'} + LangGraph)",
         }
 
