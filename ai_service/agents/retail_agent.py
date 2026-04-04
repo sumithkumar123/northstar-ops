@@ -102,9 +102,16 @@ async def run_agent_query(
              {"messages": [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=full_question)]}
         )
 
-        messages = result.get("messages", [])
         final_message = messages[-1] if messages else None
-        answer = final_message.content if final_message else "No response generated."
+        
+        # Defensive parsing: Gemini 3 content might be a list of dict blocks
+        raw_content = final_message.content if final_message else "No response generated."
+        if isinstance(raw_content, list):
+            # Extract text blocks
+            text_blocks = [blk.get("text", "") for blk in raw_content if isinstance(blk, dict) and "text" in blk]
+            answer = "\n".join(text_blocks) if text_blocks else str(raw_content)
+        else:
+            answer = str(raw_content)
 
         # Extract tool call trace for transparency
         tool_calls_trace = []

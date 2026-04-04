@@ -154,7 +154,11 @@ export default function AgentActivityFeed() {
                   <p className="text-red-400 text-xs">{agentResponse.error}</p>
                 ) : (
                   <>
-                    <p className="text-sm text-white leading-relaxed">{agentResponse.answer}</p>
+                    <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">
+                      {typeof agentResponse.answer === 'string' 
+                        ? agentResponse.answer 
+                        : JSON.stringify(agentResponse.answer, null, 2)}
+                    </p>
                     {agentResponse.tools_invoked?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-slate-700">
                         <span className="text-[10px] text-slate-500">Tools used:</span>
