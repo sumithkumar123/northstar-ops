@@ -58,7 +58,7 @@ def create_retail_agent():
 
     try:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash-latest",
+            model="gemini-3-flash-preview",
             google_api_key=GEMINI_API_KEY,
             temperature=0,          # Deterministic for business decisions
             max_tokens=2048,
