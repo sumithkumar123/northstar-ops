@@ -5,3 +5,7 @@ asyncpg==0.29.0
 python-jose[cryptography]==3.3.0
 cryptography==42.0.8
 pydantic-settings==2.3.0
+langgraph>=0.2.38
+langchain-core>=0.3.15
+langchain-google-genai>=2.0.5
+apscheduler>=3.10.4

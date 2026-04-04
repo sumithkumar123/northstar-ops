@@ -5,6 +5,7 @@ import { DailyReport, WeeklyPoint, InventoryItem } from '../api/types'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { DollarSign, ShoppingBag, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { STORE_MAP } from '../components/Layout'
+import AgentActivityFeed from '../components/AgentActivityFeed'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -151,26 +152,39 @@ export default function DashboardPage() {
         </ResponsiveContainer>
       </div>
 
-      {/* Low stock alerts */}
-      {alerts.length > 0 && (
-        <div className="mt-4 bg-amber-900/20 border border-amber-700/50 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-amber-300 mb-2 flex items-center gap-2">
-            <AlertTriangle size={16} /> Low Stock Alerts
-          </h3>
-          <div className="space-y-1.5">
-            {alerts.slice(0, 5).map(item => (
-              <div key={item.inventory_id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">{item.name} <span className="text-slate-500">({item.sku})</span></span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  item.severity === 'critical' ? 'bg-red-900/60 text-red-300' : 'bg-amber-900/60 text-amber-300'
-                }`}>
-                  {item.quantity} left
-                </span>
+      {/* Bottom row: Low stock + Agent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Low stock alerts */}
+        <div>
+          {alerts.length > 0 ? (
+            <div className="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-amber-300 mb-2 flex items-center gap-2">
+                <AlertTriangle size={16} /> Low Stock Alerts
+              </h3>
+              <div className="space-y-1.5">
+                {alerts.slice(0, 5).map(item => (
+                  <div key={item.inventory_id} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-300">{item.name} <span className="text-slate-500">({item.sku})</span></span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      item.severity === 'critical' ? 'bg-red-900/60 text-red-300' : 'bg-amber-900/60 text-amber-300'
+                    }`}>
+                      {item.quantity} left
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-900/10 border border-emerald-700/30 rounded-xl p-4 text-center">
+              <p className="text-emerald-400 text-sm font-medium">✓ All products in stock</p>
+              <p className="text-slate-500 text-xs mt-1">No items below reorder point</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Agentic AI Activity Feed */}
+        <AgentActivityFeed />
+      </div>
     </div>
   )
 }
