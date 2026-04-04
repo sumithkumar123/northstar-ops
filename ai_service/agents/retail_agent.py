@@ -66,7 +66,6 @@ def create_retail_agent():
         agent = create_react_agent(
             llm,
             ALL_TOOLS,
-            messages_modifier=SYSTEM_PROMPT,
         )
         logger.info("NorthStar Retail Agent initialized: Gemini 1.5 Flash + %d tools", len(ALL_TOOLS))
         INIT_ERROR = None
@@ -98,8 +97,9 @@ async def run_agent_query(
         full_question = f"{question}\n\n[Store ID for all tool calls: {store_id}]"
 
     try:
+        from agents.retail_agent import SYSTEM_PROMPT
         result = await agent.ainvoke(
-            {"messages": [HumanMessage(content=full_question)]}
+             {"messages": [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=full_question)]}
         )
 
         messages = result.get("messages", [])
