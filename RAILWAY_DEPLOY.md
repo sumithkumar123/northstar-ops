@@ -36,7 +36,8 @@ git push -u origin main
 For each service: **+ New** → **GitHub Repo** → select `northstar-ops` → configure:
 
 ### Auth Service
-- **Root Directory:** `auth_service`  ← set this
+- **Root Directory:** `*leave empty*` (Must be `/` so Docker can see the `shared/` folder)
+- **Dockerfile Path:** `auth_service/Dockerfile`
 - **Environment Variables:**
 ```
 DATABASE_URL=<paste from PostgreSQL>
@@ -49,7 +50,9 @@ REFRESH_TOKEN_TTL=86400
 - After deploy, note the URL e.g. `https://northstar-auth.up.railway.app`
 
 ### Inventory Service
-- **Root Directory:** `inventory_service`
+- **Root Directory:** `*leave empty*`
+- **Dockerfile Path:** `inventory_service/Dockerfile`
+- **Environment Variables:**
 ```
 DATABASE_URL=<paste from PostgreSQL>
 DB_SCHEMA=inventory
@@ -58,7 +61,9 @@ JWT_PUBLIC_KEY_B64=<from .env.railway file>
 - Note URL e.g. `https://northstar-inventory.up.railway.app`
 
 ### Sales Service
-- **Root Directory:** `sales_service`
+- **Root Directory:** `*leave empty*`
+- **Dockerfile Path:** `sales_service/Dockerfile`
+- **Environment Variables:**
 ```
 DATABASE_URL=<paste from PostgreSQL>
 DB_SCHEMA=sales
@@ -67,13 +72,17 @@ INVENTORY_SERVICE_URL=https://northstar-inventory.up.railway.app
 ```
 
 ### AI Service
-- **Root Directory:** `ai_service`
+- **Root Directory:** `*leave empty*`
+- **Dockerfile Path:** `ai_service/Dockerfile`
+- **Environment Variables:**
 ```
 DATABASE_URL=<paste from PostgreSQL>
 ```
 
 ### Gateway
-- **Root Directory:** `gateway`
+- **Root Directory:** `*leave empty*`
+- **Dockerfile Path:** `gateway/Dockerfile`
+- **Environment Variables:**
 ```
 JWT_PUBLIC_KEY_B64=<from .env.railway file>
 AUTH_SERVICE_URL=https://northstar-auth.up.railway.app
@@ -84,7 +93,8 @@ AI_SERVICE_URL=https://northstar-ai.up.railway.app
 - Note URL e.g. `https://northstar-gateway.up.railway.app`
 
 ### Frontend
-- **Root Directory:** `frontend`
+- **Root Directory:** `/frontend` (This one MUST have the root directory set, no Dockerfile Path needed)
+- **Environment Variables:**
 ```
 GATEWAY_URL=https://northstar-gateway.up.railway.app
 ```
