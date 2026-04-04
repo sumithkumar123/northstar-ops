@@ -7,7 +7,6 @@ from typing import Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
-import google.generativeai as genai
 
 from agents.tools import ALL_TOOLS
 
@@ -89,6 +88,8 @@ def discover_supported_model() -> str:
     candidates = get_model_candidates()
 
     try:
+        import google.generativeai as genai
+
         genai.configure(api_key=GEMINI_API_KEY)
         available = [
             m.name.replace("models/", "")
@@ -116,6 +117,11 @@ def discover_supported_model() -> str:
                 available[0],
             )
             return available[0]
+    except ImportError:
+        logger.warning(
+            "google.generativeai is not installed; skipping model discovery and using fallback model %s",
+            candidates[0],
+        )
     except Exception as exc:
         logger.warning("Gemini model discovery failed, using configured fallback list: %s", exc)
 
