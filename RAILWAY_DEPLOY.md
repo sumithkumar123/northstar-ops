@@ -48,6 +48,8 @@ ACCESS_TOKEN_TTL=900
 REFRESH_TOKEN_TTL=86400
 ```
 - After deploy, note the URL e.g. `https://northstar-auth.up.railway.app`
+- 
+northstar-ops-production.up.railway.app
 
 ### Inventory Service
 - **Root Directory:** `*leave empty*`
