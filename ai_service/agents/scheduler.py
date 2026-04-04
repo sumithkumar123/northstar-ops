@@ -60,7 +60,7 @@ async def _save_agent_event(
             INSERT INTO ai_agent_events
                 (id, agent_name, event_type, severity, store_id, summary, reasoning, payload, created_at)
             VALUES
-                (:id, :agent_name, :event_type, :severity, :store_id, :summary, :reasoning, :payload::json, :created_at)
+                (:id, :agent_name, :event_type, :severity, :store_id, :summary, :reasoning, CAST(:payload AS JSON), :created_at)
         """), {
             "id": str(uuid.uuid4()),
             "agent_name": agent_name,

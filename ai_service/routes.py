@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import Optional
 import json
+import logging
 
 import queries
 from database import get_db
@@ -20,6 +21,7 @@ from shared.schemas import UserRole, TokenPayload
 from agents.retail_agent import run_agent_query
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+logger = logging.getLogger(__name__)
 
 MANAGER_UP = [UserRole.regional_admin, UserRole.store_manager]
 
@@ -105,7 +107,7 @@ async def agent_query(
                     INSERT INTO ai_agent_events
                         (id, agent_name, event_type, severity, store_id, summary, reasoning, payload, created_at)
                     VALUES
-                        (:id, 'RetailAgent', 'INSIGHT', 'LOW', :store_id, :summary, :reasoning, :payload::json, :created_at)
+                        (:id, 'RetailAgent', 'INSIGHT', 'LOW', :store_id, :summary, :reasoning, CAST(:payload AS JSON), :created_at)
                 """), {
                     "id": str(uuid.uuid4()),
                     "store_id": store_id,
@@ -116,7 +118,7 @@ async def agent_query(
                 })
                 await db.commit()
             except Exception:
-                pass  # Don't fail the query if audit log write fails
+                logger.exception("Failed to write RetailAgent event to ai_agent_events")
 
     return result
 
