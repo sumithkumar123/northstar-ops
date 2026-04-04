@@ -139,18 +139,22 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold text-white mb-4">7-Day Revenue Trend</h2>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="day" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+            <XAxis dataKey="day" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
-              labelStyle={{ color: '#e2e8f0' }}
+              cursor={{ fill: 'rgba(14,165,233,0.08)' }}
+              contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+              labelStyle={{ color: '#94a3b8', fontWeight: 600, fontSize: 12 }}
+              itemStyle={{ color: '#38bdf8' }}
               formatter={(v: number) => [`$${v.toFixed(2)}`, 'Revenue']}
             />
-            <Bar dataKey="revenue" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="revenue" fill="#0ea5e9" radius={[5, 5, 0, 0]}
+              activeBar={{ fill: '#38bdf8', stroke: 'none' }} />
           </BarChart>
         </ResponsiveContainer>
       </div>
+
 
       {/* Bottom row: Low stock + Agent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
